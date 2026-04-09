@@ -39,8 +39,8 @@ A round LCD screen with two cartoon eyes that express emotion using the **PAD em
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/ryleysevier/facade-display.git
-cd facade-display
+git clone https://github.com/ryleysevier/ha-facade-dweller.git
+cd ha-facade-dweller
 cp .env.example .env
 # Edit .env with your WiFi and MQTT credentials
 ```

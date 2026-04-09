@@ -255,93 +255,80 @@ void EmojiFx::fxPupilReplace(int16_t pupilLx, int16_t pupilRx, int16_t pupilY, i
 void EmojiFx::fxFloatAbove(float dt, int16_t eyeY) {
   const uint8_t *icon = ICON_DATA[active.icon];
   float bobY = sinf(phase * 2.0f) * 5.0f;
-  int16_t y = eyeY - 30 + (int16_t)bobY;
-  // Float and drift slightly right over time
+  int16_t y = eyeY - 45 + (int16_t)bobY;
   float driftX = sinf(phase * 0.7f) * 8.0f;
-  drawIconCentered(cx + (int16_t)driftX + 15, y, icon, active.color, 2);
-  // Smaller trailing one
-  drawIconCentered(cx + (int16_t)driftX - 10, y + 8, icon, active.color, 1);
+  drawIconCentered(cx + (int16_t)driftX + 15, y, icon, active.color, 3);
+  drawIconCentered(cx + (int16_t)driftX - 15, y + 12, icon, active.color, 2);
 }
 
 void EmojiFx::fxRainDown(float dt) {
   const uint8_t *icon = ICON_DATA[active.icon];
-  // Animate 6 particles falling
   for (int i = 0; i < 6; i++) {
     particles[i][1] += 40.0f * dt + i * 5.0f * dt;
     if (particles[i][1] > scrH + 10) {
       particles[i][0] = random(30, scrW - 30);
       particles[i][1] = random(-30, -5);
     }
-    drawIconCentered((int16_t)particles[i][0], (int16_t)particles[i][1], icon, active.color);
+    drawIconCentered((int16_t)particles[i][0], (int16_t)particles[i][1], icon, active.color, 2);
   }
-  // Optional cloud at top
   if (active.icon2 < ICON_ID_COUNT) {
-    drawIconCentered(cx, 25, ICON_DATA[active.icon2], active.color, 2);
+    drawIconCentered(cx, 25, ICON_DATA[active.icon2], active.color, 3);
   }
-  // Lightning bolt flash occasionally
   if (active.icon2 == ICON_ID_BOLT && ((int)(phase * 3) % 7 == 0)) {
-    drawIconCentered(cx + 20, 50, ICON_DATA[ICON_ID_BOLT], 0xFFFF, 2);
+    drawIconCentered(cx + 20, 50, ICON_DATA[ICON_ID_BOLT], 0xFFFF, 3);
   }
 }
 
 void EmojiFx::fxOrbit(float dt) {
   const uint8_t *icon = ICON_DATA[active.icon];
-  // 3 icons orbiting the face
   for (int i = 0; i < 3; i++) {
     float angle = phase * 2.0f + i * (2.0f * M_PI / 3.0f);
-    int16_t ox = cx + (int16_t)(cosf(angle) * 70);
-    int16_t oy = cy + (int16_t)(sinf(angle) * 50);
-    // Scale slightly based on depth (front=bigger)
-    int16_t scale = sinf(angle) > 0 ? 1 : 1;
+    int16_t ox = cx + (int16_t)(cosf(angle) * 75);
+    int16_t oy = cy + (int16_t)(sinf(angle) * 55);
+    int16_t scale = sinf(angle) > 0 ? 3 : 2; // front=bigger, back=smaller
     drawIconCentered(ox, oy, icon, active.color, scale);
   }
 }
 
 void EmojiFx::fxEyeSparkle(float dt, int16_t pupilLx, int16_t pupilRx, int16_t pupilY) {
   const uint8_t *icon = ICON_DATA[active.icon];
-  // Sparkles appear and fade at highlight positions
   float sparkle = (sinf(phase * 5.0f) + 1.0f) * 0.5f;
   if (sparkle > 0.6f) {
-    drawIconCentered(pupilLx - 5, pupilY - 6, icon, active.color);
-    drawIconCentered(pupilRx - 5, pupilY - 6, icon, active.color);
+    drawIconCentered(pupilLx - 8, pupilY - 10, icon, active.color, 2);
+    drawIconCentered(pupilRx - 8, pupilY - 10, icon, active.color, 2);
   }
 }
 
 void EmojiFx::fxBottomStatus(int16_t eyeY, int16_t eyeH) {
   const uint8_t *icon = ICON_DATA[active.icon];
-  int16_t y = eyeY + eyeH + 15;
-  // Gentle bob
+  int16_t y = eyeY + eyeH + 20;
   float bobY = sinf(phase * 1.5f) * 2.0f;
-  drawIconCentered(cx, y + (int16_t)bobY, icon, active.color, 2);
+  drawIconCentered(cx, y + (int16_t)bobY, icon, active.color, 3);
 }
 
 void EmojiFx::fxBgFill(float dt) {
   const uint8_t *icon = ICON_DATA[active.icon];
-  // 6 scattered icons that slowly drift
   for (int i = 0; i < 6; i++) {
     float ox = sinf(phase * 0.3f + i * 1.5f) * 10.0f;
     float oy = cosf(phase * 0.4f + i * 1.2f) * 10.0f;
-    // Fixed scatter positions with gentle drift
-    float bx = 30 + (i % 3) * 80 + ox;
-    float by = 20 + (i / 3) * 180 + oy;
-    drawIcon((int16_t)bx, (int16_t)by, icon, active.color);
+    float bx = 20 + (i % 3) * 85 + ox;
+    float by = 15 + (i / 3) * 185 + oy;
+    drawIcon((int16_t)bx, (int16_t)by, icon, active.color, 2);
   }
 }
 
 void EmojiFx::fxSidePeek(float dt) {
   const uint8_t *icon = ICON_DATA[active.icon];
-  // Peek in from right edge with a bounce
   float peekX = sinf(min(phase * 2.0f, (float)M_PI / 2.0f));
-  int16_t x = scrW - (int16_t)(peekX * 35);
-  int16_t y = cy - 20;
-  drawIconCentered(x, y, icon, active.color, 2);
+  int16_t x = scrW - (int16_t)(peekX * 45);
+  int16_t y = cy - 25;
+  drawIconCentered(x, y, icon, active.color, 3);
 }
 
 void EmojiFx::fxPulseCenter(float dt) {
   const uint8_t *icon = ICON_DATA[active.icon];
-  // Pulse between eyes, scale throbs
   float pulse = (sinf(phase * 4.0f) + 1.0f) * 0.5f;
-  int16_t scale = 1 + (int16_t)(pulse * 1.5f);
+  int16_t scale = 2 + (int16_t)(pulse * 2.0f); // 2x to 4x
   int16_t y = cy - 5;
   drawIconCentered(cx, y, icon, active.color, scale);
 }
@@ -353,7 +340,7 @@ void EmojiFx::fxTearDrop(float dt, int16_t eyeLx, int16_t eyeRx, int16_t eyeY, i
   if (tearY < 1.0f) {
     int16_t tx = eyeLx - eyeW / 2 + 2;
     int16_t ty = eyeY + eyeH / 2 + (int16_t)(tearY * 20);
-    drawIcon(tx, ty, icon, active.color);
+    drawIcon(tx, ty, icon, active.color, 2);
   }
 }
 

@@ -1,5 +1,52 @@
 # Face Creation Guide
 
+## Animation principles (what makes eyes look alive)
+
+### Shape language
+- **Round eyes** = innocent, friendly, surprised
+- **Narrow/angular** = menacing, suspicious, angry
+- **Droopy** = tired, sad, bored
+- **Sharp corners** = aggressive; **soft corners** = gentle
+
+### Sclera (white space around pupil)
+The single biggest emotional signal after shape:
+- **Tiny pupil in big eye** (max sclera) = fear, surprise, stress
+- **Big pupil filling eye** (min sclera) = love, interest, calm
+- **Contracted pupil** = anger, focus, disgust
+
+### Squash & stretch
+- **Angry** = squash (wide + flat)
+- **Surprised/scared** = stretch (tall + narrow)
+- **Happy** = round
+- **Bored** = tiny flat slits
+
+### Timing is everything
+- **Fast blinks** = nervous. **Slow blinks** = confident/sleepy.
+- **Blink asymmetry** = close fast, open slow (follow-through)
+- **Anticipation** = slight squint before blink, pause before gaze shift
+- **Saccade overshoot** = eyes dart past target, settle back (3-phase: position → overshoot 15% → settle)
+
+### Specular highlights (catchlights)
+- Essential for life — without them eyes look dead
+- Primary highlight: large, upper-left area of pupil
+- Secondary highlight: small, offset — adds depth
+- Highlights shift opposite to gaze direction (light source is fixed)
+
+### Micro-movements
+- Random saccades every 80-300ms (tiny eye jitters)
+- Idle gaze drift every 1-3 seconds
+- Subtle breathing oscillation on eye size
+- Slight asymmetry between left/right eye (~3% size difference)
+
+### Sources
+- Disney's 12 Principles of Animation (squash/stretch, anticipation, follow-through)
+- Cozmo/Vector robot emotion engine (GDC talk by Anki)
+- Live2D VTuber parameter standard (6-8 core eye params)
+- FACS: AU5 (lid raise), AU6 (smile squeeze), AU7 (anger tighten)
+- PAD Model: Mehrabian & Russell 1974
+
+---
+
 ## How the system works
 
 Every face is defined by **3 numbers** (PAD emotional model):

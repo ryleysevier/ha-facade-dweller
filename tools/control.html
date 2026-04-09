@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tamagotchi Control Panel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; color: #eee; font-family: -apple-system, sans-serif; padding: 20px; }
+  h1 { font-size: 20px; margin-bottom: 16px; color: #e94560; }
+  h2 { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
+  .panel { display: flex; gap: 20px; flex-wrap: wrap; }
+  .card {
+    background: #16213e; border-radius: 12px; padding: 16px; min-width: 280px; flex: 1;
+  }
+  .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+  button {
+    padding: 12px 16px; border: none; border-radius: 8px; font-size: 14px;
+    cursor: pointer; transition: all 0.15s; font-weight: 500;
+  }
+  button:active { transform: scale(0.95); }
+  .btn-care { background: #e94560; color: #fff; font-size: 18px; padding: 16px; }
+  .btn-care:hover { background: #ff6b81; }
+  .btn-mood { background: #0f3460; color: #ccc; }
+  .btn-mood:hover { background: #e94560; color: #fff; }
+  .btn-mood.active { background: #e94560; color: #fff; }
+  .btn-pad { background: #1a1a3e; color: #aaa; border: 1px solid #333; font-size: 12px; padding: 8px; }
+  .btn-pad:hover { background: #e94560; color: #fff; border-color: #e94560; }
+  .slider-group { margin: 8px 0; }
+  .slider-group label { font-size: 13px; display: flex; justify-content: space-between; color: #aaa; }
+  input[type=range] { width: 100%; accent-color: #e94560; }
+  input[type=text] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #333; background: #0f3460; color: #eee; font-family: monospace; }
+  #log { background: #0a0a1a; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; color: #7f8c8d; }
+  #log .ok { color: #2ecc71; }
+  #log .err { color: #e74c3c; }
+  #log .info { color: #3498db; }
+  #status { padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; }
+  #status.connected { background: #0f3460; color: #2ecc71; }
+  #status.disconnected { background: #3c0a0a; color: #e74c3c; }
+  .config-row { display: flex; gap: 8px; margin: 8px 0; align-items: center; }
+  .config-row label { font-size: 13px; color: #aaa; min-width: 60px; }
+  .config-row input { flex: 1; }
+  .pad-display { font-family: monospace; font-size: 12px; color: #888; margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>🐾 Tamagotchi Control Panel</h1>
+<div id="status" class="disconnected">Not connected — configure MQTT below</div>
+
+<div class="panel">
+
+  <!-- CARE BUTTONS -->
+  <div class="card">
+    <h2>Care</h2>
+    <div class="btn-grid">
+      <button class="btn-care" onclick="send('tamagotchi/feed','')">🍕 Feed</button>
+      <button class="btn-care" onclick="send('tamagotchi/pet','')">🤗 Pet</button>
+      <button class="btn-care" onclick="send('tamagotchi/play','')">🎮 Play</button>
+      <button class="btn-care" onclick="sendMood('love')" style="background:#e91e90">💕 Love</button>
+    </div>
+  </div>
+
+  <!-- QUICK MOODS -->
+  <div class="card">
+    <h2>Quick Moods</h2>
+    <div class="btn-grid cols3">
+      <button class="btn-mood" onclick="sendMood('happy')">😊 Happy</button>
+      <button class="btn-mood" onclick="sendMood('sad')">😢 Sad</button>
+      <button class="btn-mood" onclick="sendMood('angry')">😡 Angry</button>
+      <button class="btn-mood" onclick="sendMood('scared')">😨 Scared</button>
+      <button class="btn-mood" onclick="sendMood('surprised')">😲 Surprised</button>
+      <button class="btn-mood" onclick="sendMood('excited')">🤩 Excited</button>
+      <button class="btn-mood" onclick="sendMood('bored')">😑 Bored</button>
+      <button class="btn-mood" onclick="sendMood('curious')">🧐 Curious</button>
+      <button class="btn-mood" onclick="sendMood('content')">😌 Content</button>
+      <button class="btn-mood" onclick="sendMood('nervous')">😰 Nervous</button>
+      <button class="btn-mood" onclick="sendMood('peaceful')">🧘 Peaceful</button>
+      <button class="btn-mood" onclick="sendMood('confused')">😵 Confused</button>
+    </div>
+  </div>
+
+  <!-- SITUATIONAL -->
+  <div class="card">
+    <h2>Situational</h2>
+    <div class="btn-grid cols3">
+      <button class="btn-mood" onclick="sendMood('doorbell')">🔔 Doorbell</button>
+      <button class="btn-mood" onclick="sendMood('rain_detected')">🌧️ Rain</button>
+      <button class="btn-mood" onclick="sendMood('sunny')">☀️ Sunny</button>
+      <button class="btn-mood" onclick="sendMood('thunderstorm')">⛈️ Storm</button>
+      <button class="btn-mood" onclick="sendMood('snowing')">❄️ Snow</button>
+      <button class="btn-mood" onclick="sendMood('party_mode')">🎉 Party</button>
+      <button class="btn-mood" onclick="sendMood('music_playing')">🎵 Music</button>
+      <button class="btn-mood" onclick="sendMood('morning_coffee')">☕ Coffee</button>
+      <button class="btn-mood" onclick="sendMood('napping')">💤 Nap</button>
+      <button class="btn-mood" onclick="sendMood('alarm_triggered')">🚨 Alarm</button>
+      <button class="btn-mood" onclick="sendMood('owner_home')">🏠 Home</button>
+      <button class="btn-mood" onclick="sendMood('stargazing')">⭐ Stars</button>
+    </div>
+  </div>
+
+  <!-- PAD SLIDERS -->
+  <div class="card">
+    <h2>Custom PAD</h2>
+    <div class="slider-group">
+      <label>Pleasure <span id="pVal">0</span></label>
+      <input type="range" id="padP" min="-100" max="100" value="0">
+    </div>
+    <div class="slider-group">
+      <label>Arousal <span id="aVal">0</span></label>
+      <input type="range" id="padA" min="-100" max="100" value="0">
+    </div>
+    <div class="slider-group">
+      <label>Dominance <span id="dVal">0</span></label>
+      <input type="range" id="padD" min="-100" max="100" value="0">
+    </div>
+    <button class="btn-care" style="width:100%;margin-top:8px" onclick="sendPAD()">Send PAD</button>
+    <div class="pad-display" id="padPreview">P:0 A:0 D:0</div>
+  </div>
+
+  <!-- RAW COMMAND -->
+  <div class="card">
+    <h2>Raw MQTT</h2>
+    <div class="config-row">
+      <label>Topic</label>
+      <input type="text" id="rawTopic" value="tamagotchi/face">
+    </div>
+    <div class="config-row">
+      <label>Payload</label>
+      <input type="text" id="rawPayload" value='{"p":80,"a":50,"d":50,"hue":330,"icon":"heart","fx":"pupil_replace","color":"F800"}'>
+    </div>
+    <button class="btn-care" style="width:100%;margin-top:8px" onclick="sendRaw()">Send Raw</button>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="card">
+    <h2>MQTT Connection</h2>
+    <div class="config-row">
+      <label>Host</label>
+      <input type="text" id="mqttHost" value="192.168.5.173">
+    </div>
+    <div class="config-row">
+      <label>Port</label>
+      <input type="text" id="mqttPort" value="9001">
+    </div>
+    <div class="config-row">
+      <label>User</label>
+      <input type="text" id="mqttUser" value="facade">
+    </div>
+    <div class="config-row">
+      <label>Pass</label>
+      <input type="text" id="mqttPass" value="">
+    </div>
+    <button class="btn-care" style="width:100%;margin-top:8px;background:#0f3460" onclick="connectMqtt()">Connect</button>
+    <p style="font-size:11px;color:#555;margin-top:8px">
+      Requires Mosquitto WebSocket listener on port 9001.<br>
+      Or use the CLI fallback buttons below (copies command to clipboard).
+    </p>
+
+    <h2 style="margin-top:16px">CLI Fallback</h2>
+    <p style="font-size:11px;color:#666;margin-bottom:8px">
+      If WebSocket isn't available, buttons below copy mosquitto_pub commands to clipboard.
+    </p>
+    <label style="font-size:12px;color:#aaa">
+      <input type="checkbox" id="useCli" checked> Use clipboard mode (no WebSocket)
+    </label>
+  </div>
+
+  <!-- LOG -->
+  <div class="card" style="min-width:100%">
+    <h2>Log</h2>
+    <div id="log"></div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>
+let client = null;
+const logEl = document.getElementById('log');
+const statusEl = document.getElementById('status');
+
+function log(msg, cls = '') {
+  const line = document.createElement('div');
+  line.className = cls;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  logEl.prepend(line);
+  if (logEl.children.length > 50) logEl.removeChild(logEl.lastChild);
+}
+
+// PAD slider updates
+['padP','padA','padD'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    document.getElementById('pVal').textContent = document.getElementById('padP').value;
+    document.getElementById('aVal').textContent = document.getElementById('padA').value;
+    document.getElementById('dVal').textContent = document.getElementById('padD').value;
+    const p = document.getElementById('padP').value;
+    const a = document.getElementById('padA').value;
+    const d = document.getElementById('padD').value;
+    document.getElementById('padPreview').textContent = `P:${p} A:${a} D:${d}`;
+  });
+});
+
+function connectMqtt() {
+  const host = document.getElementById('mqttHost').value;
+  const port = document.getElementById('mqttPort').value;
+  const user = document.getElementById('mqttUser').value;
+  const pass = document.getElementById('mqttPass').value;
+
+  const url = `ws://${host}:${port}`;
+  log(`Connecting to ${url}...`, 'info');
+
+  try {
+    client = mqtt.connect(url, {
+      username: user,
+      password: pass,
+      clientId: 'tamagotchi-panel-' + Math.random().toString(16).substr(2, 4),
+    });
+
+    client.on('connect', () => {
+      log('Connected to MQTT!', 'ok');
+      statusEl.className = 'connected';
+      statusEl.textContent = `Connected to ${host}:${port}`;
+      document.getElementById('useCli').checked = false;
+      client.subscribe('tamagotchi/status');
+    });
+
+    client.on('error', (err) => {
+      log(`MQTT error: ${err.message}`, 'err');
+      statusEl.className = 'disconnected';
+      statusEl.textContent = 'Connection failed';
+    });
+
+    client.on('message', (topic, message) => {
+      log(`← ${topic}: ${message.toString()}`, 'info');
+    });
+
+    client.on('close', () => {
+      log('MQTT disconnected', 'err');
+      statusEl.className = 'disconnected';
+      statusEl.textContent = 'Disconnected';
+    });
+  } catch(e) {
+    log(`Connection error: ${e.message}`, 'err');
+  }
+}
+
+function send(topic, payload) {
+  const useCli = document.getElementById('useCli').checked;
+
+  if (useCli || !client || !client.connected) {
+    // CLI fallback: copy mosquitto_pub command
+    const host = document.getElementById('mqttHost').value;
+    const user = document.getElementById('mqttUser').value;
+    const pass = document.getElementById('mqttPass').value;
+    const cmd = `mosquitto_pub -h ${host} -u ${user} -P '${pass}' -t ${topic} -m '${payload}'`;
+    navigator.clipboard.writeText(cmd).then(() => {
+      log(`📋 Copied: ${topic} → ${payload || '(empty)'}`, 'ok');
+    }).catch(() => {
+      log(`CMD: ${cmd}`, 'info');
+    });
+    return;
+  }
+
+  client.publish(topic, payload);
+  log(`→ ${topic}: ${payload || '(empty)'}`, 'ok');
+}
+
+function sendMood(name) {
+  send('tamagotchi/mood', JSON.stringify({name: name}));
+  document.querySelectorAll('.btn-mood').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function sendPAD() {
+  const p = parseInt(document.getElementById('padP').value);
+  const a = parseInt(document.getElementById('padA').value);
+  const d = parseInt(document.getElementById('padD').value);
+  send('tamagotchi/pad', JSON.stringify({p, a, d}));
+}
+
+function sendRaw() {
+  const topic = document.getElementById('rawTopic').value;
+  const payload = document.getElementById('rawPayload').value;
+  send(topic, payload);
+}
+</script>
+</body>
+</html>

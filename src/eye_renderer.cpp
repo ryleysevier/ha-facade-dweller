@@ -240,7 +240,8 @@ EyeRenderer::EyeRenderer(uint16_t *framebuffer, int16_t width, int16_t height)
     saccadeX(0), saccadeY(0), saccadeTimer(0),
     breathPhase(0),
     gazeTargetX(0), gazeTargetY(0),
-    gazeCurrentX(0), gazeCurrentY(0), gazeTimer(0) {
+    gazeCurrentX(0), gazeCurrentY(0), gazeTimer(0),
+    curP(0), curA(0), curD(0) {
   emojiFx = new EmojiFx(framebuffer, width, height);
   memset(&current, 0, sizeof(EyeParams));
   memset(&target, 0, sizeof(EyeParams));
@@ -332,15 +333,38 @@ void EyeRenderer::applyHueOverride(int moodIndex, EyeParams &params) {
 }
 
 void EyeRenderer::setMood(const Mood &mood, int moodIndex) {
+  curP = mood.pleasure; curA = mood.arousal; curD = mood.dominance;
   setEmotion(padToFloat(mood.pleasure), padToFloat(mood.arousal), padToFloat(mood.dominance));
   currentMoodIndex = moodIndex;
-  // Apply hue overrides to target
   applyHueOverride(moodIndex, target);
   pupilReplaced = false;
   EmojiEffect effect;
   if (moodIndex >= 0 && getMoodEmoji(moodIndex, effect)) {
     emojiFx->setEffect(effect);
     if (effect.pattern == EMOJI_PUPIL_REPLACE) pupilReplaced = true;
+  } else {
+    emojiFx->clearEffect();
+  }
+}
+
+void EyeRenderer::setFace(float pleasure, float arousal, float dominance,
+                           int16_t hueOverride, EmojiPattern emojiPattern,
+                           IconId emojiIcon, uint16_t emojiColor) {
+  curP = (int8_t)(pleasure * 100); curA = (int8_t)(arousal * 100); curD = (int8_t)(dominance * 100);
+  setEmotion(pleasure, arousal, dominance);
+  currentMoodIndex = -1;
+
+  // Apply hue override
+  if (hueOverride >= 0) {
+    target.hue = (float)hueOverride;
+  }
+
+  // Apply emoji
+  pupilReplaced = false;
+  if (emojiPattern != EMOJI_NONE && emojiIcon < ICON_ID_COUNT) {
+    EmojiEffect effect = {emojiPattern, emojiIcon, ICON_ID_COUNT, emojiColor};
+    emojiFx->setEffect(effect);
+    if (emojiPattern == EMOJI_PUPIL_REPLACE) pupilReplaced = true;
   } else {
     emojiFx->clearEffect();
   }

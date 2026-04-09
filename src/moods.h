@@ -19,7 +19,7 @@ typedef struct {
 
 #define NUM_MOODS 200
 
-extern const Mood MOODS[NUM_MOODS];
+extern const Mood MOODS[];
 
 // Helper to convert stored int8 to float -1..1
 static inline float padToFloat(int8_t v) { return v / 100.0f; }

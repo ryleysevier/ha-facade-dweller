@@ -10,6 +10,10 @@
             "includePath": [
                 "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/include",
                 "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/src",
+                "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
+                "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Network/src",
+                "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/ArduinoJson/src",
+                "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/PubSubClient/src",
                 "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/Adafruit GC9A01A",
                 "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/Adafruit GFX Library",
                 "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/Adafruit BusIO",
@@ -304,7 +308,6 @@
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/LittleFS/src",
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Matter/src",
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/NetBIOS/src",
-                "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Network/src",
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/NetworkClientSecure/src",
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/OpenThread/src",
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/PPP/src",
@@ -319,7 +322,6 @@
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                 "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Zigbee/src",
                 ""
@@ -329,6 +331,10 @@
                 "path": [
                     "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/include",
                     "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/src",
+                    "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
+                    "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Network/src",
+                    "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/ArduinoJson/src",
+                    "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/PubSubClient/src",
                     "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/Adafruit GC9A01A",
                     "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/Adafruit GFX Library",
                     "/Users/ryleysevier/Documents/src/esp32-round-screen-demo/.pio/libdeps/seeed_xiao_esp32c6/Adafruit BusIO",
@@ -623,7 +629,6 @@
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/LittleFS/src",
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Matter/src",
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/NetBIOS/src",
-                    "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Network/src",
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/NetworkClientSecure/src",
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/OpenThread/src",
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/PPP/src",
@@ -638,7 +643,6 @@
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                    "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                     "/Users/ryleysevier/.platformio/packages/framework-arduinoespressif32/libraries/Zigbee/src",
                     ""

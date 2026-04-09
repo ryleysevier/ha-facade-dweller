@@ -1,6 +1,3 @@
-#ifndef MOODS_DATA_H
-#define MOODS_DATA_H
-
 #include "moods.h"
 
 // 200 moods as PAD vectors (Pleasure, Arousal, Dominance) scaled -100 to 100
@@ -227,5 +224,3 @@ const Mood MOODS[NUM_MOODS] = {
   /*198 */ {"celebration",        95,  85,  35},
   /*199 */ {"mystery",            -5,  35, -40},   // suspicious, uncertain
 };
-
-#endif // MOODS_DATA_H

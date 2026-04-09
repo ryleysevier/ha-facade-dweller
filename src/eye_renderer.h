@@ -46,6 +46,16 @@ public:
   // Set from a Mood struct (with index for emoji lookup + hue overrides)
   void setMood(const Mood &mood, int moodIndex = -1);
 
+  // Set with full parametric control (from MQTT)
+  void setFace(float pleasure, float arousal, float dominance,
+               int16_t hueOverride = -1, // -1 = auto from PAD
+               EmojiPattern emojiPattern = EMOJI_NONE,
+               IconId emojiIcon = ICON_ID_COUNT,
+               uint16_t emojiColor = 0xFFFF);
+
+  // Get current PAD for status publishing
+  void getCurrentPAD(int8_t &p, int8_t &a, int8_t &d) { p = curP; a = curA; d = curD; }
+
   // Apply category-based hue overrides
   static void applyHueOverride(int moodIndex, EyeParams &params);
 
@@ -60,7 +70,8 @@ private:
   int16_t scrW, scrH, cx, cy;
   EmojiFx *emojiFx;
   int currentMoodIndex;
-  bool pupilReplaced; // true when emoji replaces pupil
+  bool pupilReplaced;
+  int8_t curP, curA, curD; // current PAD for status reporting
 
   // Current and target eye params (for tweening)
   EyeParams current;

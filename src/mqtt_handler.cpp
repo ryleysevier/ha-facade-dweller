@@ -3,7 +3,7 @@
 MqttHandler *MqttHandler::instance = nullptr;
 
 MqttHandler::MqttHandler()
-  : mqttClient(wifiClient), faceCallback(nullptr),
+  : mqttClient(wifiClient), faceCallback(nullptr), needsCallback(nullptr),
     lastStatusMs(0), lastReconnectMs(0) {
   instance = this;
 }
@@ -54,7 +54,10 @@ void MqttHandler::connectMqtt() {
     mqttClient.subscribe(TOPIC_MOOD);
     mqttClient.subscribe(TOPIC_PAD);
     mqttClient.subscribe(TOPIC_FACE);
-    Serial.println("MQTT: subscribed to tamagotchi/mood, pad, face");
+    mqttClient.subscribe(TOPIC_FEED);
+    mqttClient.subscribe(TOPIC_PET);
+    mqttClient.subscribe(TOPIC_PLAY);
+    Serial.println("MQTT: subscribed to tamagotchi/*");
   } else {
     Serial.printf(" FAILED (rc=%d)\n", mqttClient.state());
   }
@@ -92,6 +95,7 @@ void MqttHandler::publishStatus(int8_t p, int8_t a, int8_t d, const char *moodNa
   doc["d"] = d;
   doc["uptime"] = uptimeMs / 1000;
   doc["wifi_rssi"] = WiFi.RSSI();
+  // Needs will be added by caller if available
 
   char buf[256];
   serializeJson(doc, buf, sizeof(buf));
@@ -108,6 +112,13 @@ void MqttHandler::onMessage(char *topic, byte *payload, unsigned int length) {
   json[len] = '\0';
 
   Serial.printf("MQTT: %s -> %s\n", topic, json);
+
+  // Handle needs topics (no JSON parsing needed)
+  if (needsCallback) {
+    if (strcmp(topic, TOPIC_FEED) == 0) { needsCallback("feed"); return; }
+    if (strcmp(topic, TOPIC_PET) == 0)  { needsCallback("pet"); return; }
+    if (strcmp(topic, TOPIC_PLAY) == 0) { needsCallback("play"); return; }
+  }
 
   if (!faceCallback) return;
 

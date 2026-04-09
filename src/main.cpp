@@ -5,6 +5,7 @@
 #include "moods.h"
 #include "eye_renderer.h"
 #include "mqtt_handler.h"
+#include "needs.h"
 
 // XIAO ESP32-C6 -> GC9A01
 #define TFT_DC    0
@@ -16,20 +17,16 @@ GFXcanvas16 *canvas = NULL;
 uint16_t *framebuffer = NULL;
 EyeRenderer *eye = NULL;
 MqttHandler mqtt;
+NeedsEngine needs;
 
 // Current mood tracking
 int currentMoodIndex = 0;
 const char *currentMoodName = "neutral";
-bool mqttControlled = false; // true when MQTT has set a face
-
-// Demo mode: cycle moods when no MQTT control
-unsigned long moodTimer = 0;
-#define DEMO_MOOD_MS 4000
+int lastNeedsMoodIdx = -1;
 
 // Handle face commands from MQTT
 void onFaceCommand(const FaceCommand &cmd) {
-  mqttControlled = true;
-  moodTimer = millis(); // reset demo timer
+  needs.onMqttCommand(); // any command counts as interaction
 
   if (cmd.hasMoodName && cmd.moodIndex >= 0) {
     // Preset mood
@@ -74,7 +71,9 @@ void setup() {
 
   eye = new EyeRenderer(framebuffer, 240, 240);
 
-  // Start with happy face while connecting
+  // Try to set timezone for time-of-day awareness
+  configTzTime("America/Denver", "pool.ntp.org");
+
   eye->setMood(MOODS[0], 0);
   currentMoodName = MOODS[0].name;
 
@@ -88,23 +87,34 @@ void setup() {
 
   // Connect WiFi + MQTT
   mqtt.setFaceCallback(onFaceCommand);
+  mqtt.setNeedsCallback([](const char *action) {
+    if (strcmp(action, "feed") == 0) needs.feed();
+    else if (strcmp(action, "pet") == 0) needs.pet();
+    else if (strcmp(action, "play") == 0) needs.entertain();
+    Serial.printf("Needs: %s! H:%d E:%d B:%d Joy:%d\n",
+      action, (int)needs.getHunger(), (int)needs.getEnergy(),
+      (int)needs.getBoredom(), (int)needs.getHappiness());
+  });
   mqtt.begin();
 
-  moodTimer = millis();
   Serial.printf("Ready. Free heap: %d\n", ESP.getFreeHeap());
 }
 
 void loop() {
   mqtt.loop();
+  needs.update(millis());
 
-  // Demo mode: cycle moods if no MQTT control for 60 seconds
-  if (!mqttControlled || (millis() - moodTimer > 60000)) {
-    if (millis() - moodTimer > DEMO_MOOD_MS) {
-      moodTimer = millis();
-      mqttControlled = false;
-      currentMoodIndex = (currentMoodIndex + 1) % NUM_MOODS;
-      currentMoodName = MOODS[currentMoodIndex].name;
-      eye->setMood(MOODS[currentMoodIndex], currentMoodIndex);
+  // When idle (no MQTT commands for 60s), let needs engine drive the face
+  if (needs.shouldControl()) {
+    int needsMoodIdx = needs.getCurrentMoodIndex();
+    if (needsMoodIdx != lastNeedsMoodIdx) {
+      lastNeedsMoodIdx = needsMoodIdx;
+      currentMoodIndex = needsMoodIdx;
+      currentMoodName = MOODS[needsMoodIdx].name;
+      eye->setMood(MOODS[needsMoodIdx], needsMoodIdx);
+      Serial.printf("Idle: %s (H:%d E:%d B:%d Joy:%d)\n",
+        currentMoodName, (int)needs.getHunger(), (int)needs.getEnergy(),
+        (int)needs.getBoredom(), (int)needs.getHappiness());
     }
   }
 

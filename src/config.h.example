@@ -1,0 +1,44 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// These are populated from environment variables at build time.
+// Copy this to config.h, or set the env vars and use build_flags.
+// See platformio.ini for the build_flags approach.
+
+#ifndef WIFI_SSID
+#define WIFI_SSID     "YOUR_WIFI_SSID"
+#endif
+
+#ifndef WIFI_PASSWORD
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#endif
+
+#ifndef MQTT_SERVER
+#define MQTT_SERVER   "192.168.1.100"
+#endif
+
+#ifndef MQTT_PORT
+#define MQTT_PORT     1883
+#endif
+
+#ifndef MQTT_USER
+#define MQTT_USER     ""
+#endif
+
+#ifndef MQTT_PASSWORD
+#define MQTT_PASSWORD ""
+#endif
+
+// MQTT topics
+#define TOPIC_MOOD    "tamagotchi/mood"
+#define TOPIC_PAD     "tamagotchi/pad"
+#define TOPIC_FACE    "tamagotchi/face"
+#define TOPIC_FEED    "tamagotchi/feed"
+#define TOPIC_PET     "tamagotchi/pet"
+#define TOPIC_PLAY    "tamagotchi/play"
+#define TOPIC_STATUS  "tamagotchi/status"
+
+#define DEVICE_NAME   "tamagotchi-01"
+#define STATUS_INTERVAL_MS 30000
+
+#endif // CONFIG_H

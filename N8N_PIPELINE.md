@@ -40,7 +40,7 @@ A two-tier AI pipeline running in n8n that watches Home Assistant events and sen
 - **Latency:** 2-5 seconds
 
 ### Output: MQTT Publish
-- **Broker:** 192.168.5.173:1883 (user: facade)
+- **Broker:** YOUR_MQTT_HOST:1883 (user: YOUR_MQTT_USER)
 - **Topic:** `tamagotchi/face` (full control) or `tamagotchi/mood` (preset name)
 - **Payload:** See face command format below
 
@@ -92,7 +92,7 @@ automation:
 
 rest_command:
   n8n_tamagotchi:
-    url: "https://n8n.sevier.link/webhook/tamagotchi-event"
+    url: "https://YOUR_N8N_HOST/webhook/tamagotchi-event"
     method: POST
     content_type: "application/json"
     payload: >
@@ -239,9 +239,9 @@ What face should the tamagotchi show?
 
 ### MQTT Broker
 
-- **Host:** 192.168.5.173
+- **Host:** YOUR_MQTT_HOST
 - **Port:** 1883
-- **User:** facade
+- **User:** YOUR_MQTT_USER
 - **Device client ID:** tamagotchi-01
 
 ---

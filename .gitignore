@@ -1,2 +1,14 @@
-.pio
-src/config.h
+# PlatformIO
+.pio/
+
+# IDE
+.vscode/
+
+# Credentials (secrets live in .env, not config.h)
+.env
+
+# Generated previews (regenerate with: python3 tools/export_emotions.py)
+emotion_previews/
+
+# OS
+.DS_Store

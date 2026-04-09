@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PAD Eye Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; color: #eee; font-family: -apple-system, sans-serif; display: flex; height: 100vh; }
+  #sidebar {
+    width: 320px; padding: 16px; overflow-y: auto; background: #16213e;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  #sidebar h2 { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+  .slider-group { display: flex; flex-direction: column; gap: 2px; }
+  .slider-group label { font-size: 13px; display: flex; justify-content: space-between; }
+  .slider-group input[type=range] { width: 100%; accent-color: #e94560; }
+  #main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+  canvas { border-radius: 50%; box-shadow: 0 0 40px rgba(233,69,96,0.2); }
+  #mood-name { font-size: 24px; font-weight: 600; }
+  #mood-list {
+    display: flex; flex-wrap: wrap; gap: 4px; max-height: 300px; overflow-y: auto;
+  }
+  .mood-btn {
+    padding: 4px 8px; font-size: 11px; border: 1px solid #333; border-radius: 4px;
+    background: #1a1a2e; color: #ccc; cursor: pointer; transition: all 0.15s;
+  }
+  .mood-btn:hover { background: #e94560; color: #fff; border-color: #e94560; }
+  .mood-btn.active { background: #e94560; color: #fff; border-color: #e94560; }
+  #pad-display { font-size: 12px; color: #666; font-family: monospace; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h2>PAD Controls</h2>
+  <div class="slider-group">
+    <label>Pleasure <span id="pVal">0</span></label>
+    <input type="range" id="pleasure" min="-100" max="100" value="0">
+  </div>
+  <div class="slider-group">
+    <label>Arousal <span id="aVal">0</span></label>
+    <input type="range" id="arousal" min="-100" max="100" value="0">
+  </div>
+  <div class="slider-group">
+    <label>Dominance <span id="dVal">0</span></label>
+    <input type="range" id="dominance" min="-100" max="100" value="0">
+  </div>
+  <div id="pad-display"></div>
+
+  <h2>Presets</h2>
+  <div id="mood-list"></div>
+</div>
+
+<div id="main">
+  <div id="mood-name">neutral</div>
+  <canvas id="eye" width="240" height="240"></canvas>
+</div>
+
+<script>
+// --- Mood data (same as moods_data.h) ---
+const MOODS = [
+  ["happy",80,50,50],["sad",-70,-40,-50],["angry",-60,80,70],["scared",-70,90,-80],
+  ["surprised",10,95,-40],["content",70,-30,40],["excited",90,90,60],["bored",-30,-60,0],
+  ["curious",40,50,-10],["love",95,40,20],["disgusted",-80,40,50],["jealous",-50,50,30],
+  ["proud",70,30,80],["guilty",-60,-20,-60],["hopeful",60,30,-10],["nervous",-30,70,-50],
+  ["peaceful",60,-70,20],["mischievous",30,60,50],["confused",-20,40,-40],["determined",40,50,80],
+  ["cozy_evening",75,-40,30],["morning_energy",60,60,40],["too_hot",-40,50,-10],["too_cold",-40,30,-30],
+  ["perfect_temp",70,-20,30],["door_unlocked",-20,60,-30],["door_locked",50,-30,50],["lights_on",40,20,30],
+  ["lights_dim",50,-40,20],["lights_off",-10,-70,-10],["high_energy_use",-30,50,20],["low_energy_use",50,-20,30],
+  ["eco_mode",60,-30,40],["music_playing",70,40,20],["tv_on",40,10,10],["cooking_time",60,40,30],
+  ["laundry_done",50,20,20],["humid",-30,10,-10],["dry_air",-20,10,0],["good_air",60,-10,30],
+  ["poor_air",-50,40,-20],["window_open",50,20,10],["window_closed",30,-20,20],["washer_running",30,10,10],
+  ["alarm_armed",40,20,60],["alarm_triggered",-80,100,-60],["garage_open",10,40,-20],["garage_closed",40,-20,40],
+  ["heating_on",40,10,20],["cooling_on",40,10,20],["vacuum_running",20,30,10],["guest_wifi",40,20,10],
+  ["battery_low",-50,-30,-40],["battery_full",60,10,40],["internet_down",-60,70,-30],["update_ready",30,30,0],
+  ["mail_arrived",50,50,10],["package_here",80,70,20],["sprinklers_on",30,10,10],["smoke_detected",-90,100,-70],
+  ["slightly_hungry",-10,20,-10],["hungry",-30,40,-20],["starving",-70,70,-40],["just_fed",80,20,30],
+  ["full",60,-30,20],["slightly_tired",-10,-30,-10],["tired",-30,-60,-30],["exhausted",-60,-80,-50],
+  ["well_rested",70,40,40],["waking_up",20,10,-20],["slightly_bored",-20,-30,0],["very_bored",-50,-70,-10],
+  ["entertained",60,40,20],["playful",70,70,30],["lonely",-60,-30,-50],["needy",-20,30,-50],
+  ["overstimulated",-20,80,-10],["calm",50,-50,20],["zen",60,-80,30],["thirsty",-20,30,-10],
+  ["refreshed",60,30,30],["attention_seek",10,60,-40],["grateful",70,20,10],["pouty",-40,20,-30],
+  ["hyper",60,100,30],["snuggly",70,-40,-20],["grumpy",-50,30,20],["mellow",40,-40,10],
+  ["frisky",50,70,30],["napping",30,-90,-30],
+  ["doorbell",0,90,-30],["someone_arrived",60,70,10],["someone_left",-30,20,-10],["owner_home",90,60,20],
+  ["owner_away",-50,-20,-40],["everyone_asleep",20,-80,10],["party_mode",80,90,40],["energy_spike",-20,60,20],
+  ["rain_detected",30,-10,0],["storm_warning",-30,60,-30],["sunny",60,30,20],["cloudy",10,-20,0],
+  ["snowing",40,10,0],["windy",10,30,-10],["motion_detected",-10,70,-20],["phone_ringing",10,50,-10],
+  ["timer_done",40,50,20],["calendar_event",20,30,10],["trash_day",-10,10,10],["water_leak",-80,100,-60],
+  ["co2_high",-40,50,-20],["noise_alert",-20,70,-20],["sunrise",50,20,10],["sunset",50,-20,10],
+  ["power_outage",-60,80,-50],["backup_power",-20,40,10],["device_offline",-30,30,-10],["new_device",40,40,10],
+  ["being_petted",85,20,0],["treat_received",90,50,20],["scolded",-60,30,-60],["praised",80,40,30],
+  ["stranger_detect",-30,80,-50],["pet_detected",60,50,10],["car_arriving",40,50,10],["car_leaving",-20,20,-10],
+  ["garden_dry",-20,20,0],["plant_happy",50,10,20],["fridge_open",10,40,-10],["goodnight",40,-60,0],
+  ["dawn",40,-30,0],["early_morning",30,10,-10],["morning_coffee",50,20,20],["midmorning",50,30,30],
+  ["noon",40,40,30],["afternoon_slump",-20,-40,-10],["late_afternoon",30,10,10],["golden_hour",70,-10,20],
+  ["dusk",40,-30,0],["twilight",30,-40,-10],["early_evening",50,10,20],["dinner_time",60,30,20],
+  ["relaxed_evening",60,-30,20],["movie_night",50,-20,10],["late_night",-10,-50,-10],["midnight",-10,-60,0],
+  ["deep_night",0,-80,0],["witching_hour",-10,-40,10],["pre_dawn",10,-50,0],["weekend_morning",60,-10,20],
+  ["sunday_lazy",50,-50,10],["monday_blues",-30,-20,-10],["friday_vibes",70,60,30],["lunch_time",50,30,20],
+  ["naptime",30,-80,-20],["workout_time",50,70,50],["bedtime",20,-60,-10],["wee_hours",-10,-80,0],
+  ["siesta",30,-70,-10],["tea_time",60,-20,20],
+  ["christmas",90,60,30],["halloween",40,60,20],["valentines",90,40,10],["new_years",80,90,40],
+  ["birthday",95,80,30],["fireworks",60,90,10],["spring_bloom",60,30,10],["summer_heat",-10,40,0],
+  ["autumn_cozy",60,-20,20],["winter_cold",-20,10,-10],["aurora",70,10,10],["rainbow",80,40,10],
+  ["meditation",50,-90,30],["gaming",60,70,40],["reading",50,-30,20],["working",20,40,50],
+  ["creative_flow",70,50,60],["spa_day",70,-50,10],["dance_party",80,95,30],["candlelight",60,-40,10],
+  ["stargazing",50,-30,0],["ocean_vibes",50,-20,0],["forest_bath",60,-40,10],["campfire",60,-10,20],
+  ["thunderstorm",-20,70,-20],["snowfall",40,-20,0],["wind_howling",-10,40,-10],["heatwave",-40,30,-10],
+  ["earthquake",-70,100,-70],["good_morning",60,30,20],["goodnight_kiss",80,-30,0],["tax_season",-40,40,20],
+  ["payday",80,50,40],["cleaning_day",20,30,20],["baking",70,30,20],["garden_time",60,20,20],
+  ["road_trip",70,60,30],["sick_day",-60,-40,-40],["celebration",90,80,30],["mystery",10,20,-20],
+];
+
+// --- PAD → Eye Params (mirrors C++ logic) ---
+function padToEye(p, a, d) {
+  p = Math.max(-1, Math.min(1, p));
+  a = Math.max(-1, Math.min(1, a));
+  d = Math.max(-1, Math.min(1, d));
+
+  const baseSize = 130;
+  let width = baseSize + a * 25 + p * 10 + d * 10;
+  let height = baseSize + a * 30 + p * 15;
+
+  let roundness = 0.6 + p * 0.3 - (a > 0 && p < 0 ? 0.2 : 0);
+  roundness = Math.max(0.2, Math.min(1, roundness));
+
+  let openness = 0.7 + a * 0.25;
+  if (a < -0.5) openness -= 0.15;
+  openness = Math.max(0.15, Math.min(1, openness));
+
+  let pupilSize = 0.35 + a * 0.15 + p * 0.05;
+  pupilSize = Math.max(0.15, Math.min(0.6, pupilSize));
+
+  let gazeX = 0, gazeY = d * -0.15;
+  if (d < -0.3) gazeX = -0.2;
+
+  let lidTop = 0;
+  if (a < 0) lidTop = Math.abs(a) * 0.4;
+  if (p < -0.3 && a > 0.3) lidTop = 0.2;
+
+  let lidBottom = 0;
+  if (p > 0.3) lidBottom = p * 0.35;
+  if (a > 0.7 && p >= 0) lidBottom = 0;
+
+  let lidAngle = 0;
+  if (p < -0.3 && a > 0.3) lidAngle = -0.5 - p * 0.3;
+  if (p < 0 && a < -0.3) lidAngle = 0.3 + Math.abs(a) * 0.2;
+  if (d > 0.5 && p < 0) lidAngle -= 0.2;
+  lidAngle = Math.max(-1, Math.min(1, lidAngle));
+
+  let hue;
+  if (p > 0.3 && a > 0.3) hue = 40;
+  else if (p > 0.3) hue = 30;
+  else if (p < -0.3 && a > 0.3 && d > 0) hue = 5;
+  else if (p < -0.3 && a > 0.3) hue = 280;
+  else if (p < -0.3 && a <= 0) hue = 220;
+  else if (a < -0.3) hue = 180;
+  else hue = 35;
+
+  let sat = 0.6 + Math.abs(a) * 0.3;
+  if (p < -0.5 && d < -0.3) sat -= 0.2;
+  sat = Math.max(0.3, Math.min(1, sat));
+
+  let bri = 0.7 + p * 0.2;
+  bri = Math.max(0.4, Math.min(1, bri));
+
+  let glow = Math.abs(a) * 0.5 + (p > 0 ? p * 0.3 : 0);
+  glow = Math.max(0, Math.min(0.8, glow));
+
+  // Brows
+  let browHeight = 0.3 + a * 0.3;
+  if (p < -0.3 && a > 0.3 && d > 0) browHeight = -0.2;
+  if (p < -0.5 && d < -0.3) browHeight = 0.7;
+  browHeight = Math.max(-0.5, Math.min(1, browHeight));
+
+  let browAngle = 0;
+  if (p < -0.3 && a > 0.3) browAngle = -0.6 - d * 0.3;
+  if (p < -0.3 && d < -0.3) browAngle = 0.5 + Math.abs(d) * 0.3;
+  if (p < -0.3 && a < -0.3) browAngle = 0.3;
+  if (p > 0.5) browAngle = 0.1;
+  browAngle = Math.max(-1, Math.min(1, browAngle));
+
+  let browThickness = 0.5 + d * 0.2;
+  if (p < -0.3 && a > 0.5) browThickness = 0.8;
+  browThickness = Math.max(0.3, Math.min(1, browThickness));
+
+  let browCurve = a * 0.6 + p * 0.2;
+  if (a > 0.7) browCurve = 0.8;
+  if (a < -0.5) browCurve = -0.4;
+  browCurve = Math.max(-1, Math.min(1, browCurve));
+
+  return { width, height, roundness, openness, pupilSize, gazeX, gazeY,
+           lidTop, lidBottom, lidAngle, hue, sat, bri, glow,
+           browHeight, browAngle, browThickness, browCurve };
+}
+
+function hsvToRgb(h, s, v) {
+  let c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+  let r, g, b;
+  if (h < 60) [r,g,b] = [c,x,0];
+  else if (h < 120) [r,g,b] = [x,c,0];
+  else if (h < 180) [r,g,b] = [0,c,x];
+  else if (h < 240) [r,g,b] = [0,x,c];
+  else if (h < 300) [r,g,b] = [x,0,c];
+  else [r,g,b] = [c,0,x];
+  return `rgb(${Math.round((r+m)*255)},${Math.round((g+m)*255)},${Math.round((b+m)*255)})`;
+}
+
+// --- Animation state ---
+let currentEye = padToEye(0, 0, 0);
+let targetEye = padToEye(0, 0, 0);
+let tweenT = 1;
+let blinkPhase = 0, isBlinking = false, blinkTimer = 3;
+let saccadeX = 0, saccadeY = 0, saccadeTimer = 0;
+let gazeX = 0, gazeY = 0, gazeTargetX = 0, gazeTargetY = 0, gazeTimer = 0;
+let breathPhase = 0;
+let lastTime = performance.now();
+
+function lerpObj(a, b, t) {
+  let out = {};
+  for (let k in a) out[k] = a[k] + (b[k] - a[k]) * t;
+  return out;
+}
+
+function easeInOut(t) { return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2; }
+function easeIn(t) { return t * t; }
+function easeOut(t) { return 1 - (1-t)*(1-t); }
+
+const canvas = document.getElementById('eye');
+const ctx = canvas.getContext('2d');
+
+function render() {
+  const now = performance.now();
+  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  lastTime = now;
+
+  // Tween
+  if (tweenT < 1) {
+    tweenT += dt * 1.5;
+    if (tweenT > 1) tweenT = 1;
+  }
+  let e = lerpObj(currentEye, targetEye, easeInOut(tweenT));
+  if (tweenT >= 1) currentEye = {...targetEye};
+
+  // Blink
+  blinkTimer -= dt;
+  if (blinkTimer <= 0 && !isBlinking) { isBlinking = true; blinkPhase = 0; }
+  if (isBlinking) {
+    blinkPhase += dt * 6;
+    if (blinkPhase >= 2) { isBlinking = false; blinkPhase = 0; blinkTimer = 3 + Math.random() * 2; }
+  }
+  let bf = 0;
+  if (isBlinking) {
+    if (blinkPhase < 0.15) bf = easeIn(blinkPhase/0.15) * 0.1;
+    else if (blinkPhase < 1) bf = 0.1 + easeIn((blinkPhase-0.15)/0.85) * 0.9;
+    else bf = 1 - easeOut(blinkPhase - 1);
+  }
+
+  // Saccade
+  saccadeTimer -= dt;
+  if (saccadeTimer <= 0) {
+    saccadeX = (Math.random()*2-1) * e.glow * 4;
+    saccadeY = (Math.random()*2-1) * e.glow * 3;
+    saccadeTimer = 0.08 + Math.random() * 0.2;
+  }
+
+  // Gaze drift
+  gazeTimer -= dt;
+  if (gazeTimer <= 0) {
+    gazeTargetX = e.gazeX + (Math.random()*2-1)*0.15;
+    gazeTargetY = e.gazeY + (Math.random()*2-1)*0.1;
+    gazeTimer = 1 + Math.random() * 2;
+  }
+  gazeX += (gazeTargetX - gazeX) * dt * 3;
+  gazeY += (gazeTargetY - gazeY) * dt * 3;
+
+  // Breathing
+  breathPhase += dt * 1.5;
+  let breathScale = 1 + Math.sin(breathPhase) * 0.015;
+
+  // Geometry
+  const gap = 12;
+  let eyeW = e.width * 0.42 * breathScale;
+  let eyeH = e.height * 0.55 * e.openness * breathScale * (1 - bf);
+  eyeH = Math.max(3, eyeH);
+  let rr = e.roundness * Math.min(eyeW, eyeH) * 0.5;
+
+  const cxc = 120, cyc = 120;
+  const lcx = cxc - gap/2 - eyeW/2;
+  const rcx = cxc + gap/2 + eyeW/2;
+
+  // Colors
+  const eyeCol = hsvToRgb(e.hue, e.sat, e.bri);
+  const bgCol = hsvToRgb(e.hue, e.sat * 0.15, 0.05);
+  const glowCol = hsvToRgb(e.hue, e.sat * 0.6, e.bri * 0.3 * e.glow);
+
+  // Clear
+  ctx.fillStyle = bgCol;
+  ctx.fillRect(0, 0, 240, 240);
+
+  // Circular clip
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(120, 120, 118, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Glow
+  if (e.glow > 0.05) {
+    let gr = e.glow * 50 + eyeW * 0.5;
+    let grad = ctx.createRadialGradient(cxc, cyc, 0, cxc, cyc, gr);
+    grad.addColorStop(0, glowCol);
+    grad.addColorStop(1, bgCol);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 240, 240);
+  }
+
+  // Draw both eyes
+  for (let side = 0; side < 2; side++) {
+    let ecx = side === 0 ? lcx : rcx;
+    let mirror = side === 0 ? 1 : -1;
+    let ex = ecx - eyeW/2;
+    let ey = cyc - eyeH/2;
+
+    // Eye body
+    ctx.fillStyle = eyeCol;
+    ctx.beginPath();
+    ctx.roundRect(ex, ey, eyeW, eyeH, rr);
+    ctx.fill();
+
+    // Pupil
+    if (eyeH > 8) {
+      let pupR = e.pupilSize * Math.min(eyeW, eyeH) * 0.45;
+      pupR = Math.max(4, pupR);
+      let mgx = eyeW * 0.5 - pupR - 3;
+      let mgy = eyeH * 0.5 - pupR - 3;
+      let px = ecx + (gazeX + saccadeX/15) * mgx;
+      let py = cyc + (gazeY + saccadeY/15) * mgy;
+
+      ctx.fillStyle = bgCol;
+      ctx.beginPath(); ctx.arc(px, py, pupR, 0, Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(px, py, Math.max(2, pupR*0.4), 0, Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(px - pupR*0.25, py - pupR*0.25, Math.max(1, pupR*0.22), 0, Math.PI*2); ctx.fill();
+    }
+
+    // Top lid
+    let angleOff = e.lidAngle * mirror;
+    if (e.lidTop > 0.01 || Math.abs(angleOff) > 0.01) {
+      let droopPx = e.lidTop * eyeH * 0.6;
+      let anglePx = angleOff * eyeW * 0.3;
+      ctx.fillStyle = bgCol;
+      ctx.beginPath();
+      ctx.moveTo(ex - 6, ey - 6);
+      ctx.lineTo(ex + eyeW + 6, ey - 6);
+      ctx.lineTo(ex + eyeW + 6 - anglePx, ey + droopPx);
+      ctx.lineTo(ex - 6 + anglePx, ey + droopPx);
+      ctx.fill();
+    }
+
+    // Bottom lid
+    if (e.lidBottom > 0.01) {
+      let raisePx = e.lidBottom * eyeH * 0.5;
+      let eyeBot = ey + eyeH;
+      ctx.fillStyle = bgCol;
+      ctx.beginPath();
+      ctx.moveTo(ex - 6, eyeBot + 6);
+      ctx.lineTo(ex + eyeW + 6, eyeBot + 6);
+      ctx.lineTo(ecx, eyeBot - raisePx);
+      ctx.fill();
+    }
+
+    // Eyebrow — curved, can cut into eye space
+    {
+      let browW = eyeW * 1.1;
+      let browH = 6 + e.browThickness * 10;
+      let browBaseY = ey - 4 - e.browHeight * eyeH * 0.4;
+      let rawAnglePx = e.browAngle * eyeW * 0.2;
+      let curveAmt = e.browCurve * eyeH * 0.25;
+
+      let bx = ecx - browW / 2;
+
+      ctx.fillStyle = hsvToRgb(e.hue, e.sat * 0.4, e.bri * 0.35);
+
+      // Build top and bottom edges of curved brow as paths
+      let topPoints = [];
+      let botPoints = [];
+      let steps = 20;
+      for (let i = 0; i <= steps; i++) {
+        let t = i / steps;
+        let sx = bx + t * browW;
+        let angleT = (side === 0) ? (1 - t) : t;
+        let angleY = rawAnglePx * (1 - 2 * angleT);
+        let curveY = -curveAmt * 4 * (t - 0.5) * (t - 0.5) + curveAmt;
+        let finalY = browBaseY + angleY - curveY;
+        topPoints.push([sx, finalY]);
+        botPoints.push([sx, finalY + browH]);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(topPoints[0][0], topPoints[0][1]);
+      for (let i = 1; i < topPoints.length; i++) ctx.lineTo(topPoints[i][0], topPoints[i][1]);
+      for (let i = botPoints.length - 1; i >= 0; i--) ctx.lineTo(botPoints[i][0], botPoints[i][1]);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  ctx.restore();
+
+  requestAnimationFrame(render);
+}
+
+// --- UI ---
+const pSlider = document.getElementById('pleasure');
+const aSlider = document.getElementById('arousal');
+const dSlider = document.getElementById('dominance');
+const nameEl = document.getElementById('mood-name');
+const padEl = document.getElementById('pad-display');
+
+function updateFromSliders() {
+  const p = pSlider.value / 100, a = aSlider.value / 100, d = dSlider.value / 100;
+  document.getElementById('pVal').textContent = pSlider.value;
+  document.getElementById('aVal').textContent = aSlider.value;
+  document.getElementById('dVal').textContent = dSlider.value;
+  padEl.textContent = `P:${p.toFixed(2)} A:${a.toFixed(2)} D:${d.toFixed(2)}`;
+  targetEye = padToEye(p, a, d);
+  tweenT = 0;
+  // Clear active mood button
+  document.querySelectorAll('.mood-btn.active').forEach(b => b.classList.remove('active'));
+}
+
+pSlider.addEventListener('input', () => { updateFromSliders(); nameEl.textContent = 'custom'; });
+aSlider.addEventListener('input', () => { updateFromSliders(); nameEl.textContent = 'custom'; });
+dSlider.addEventListener('input', () => { updateFromSliders(); nameEl.textContent = 'custom'; });
+
+// Build mood buttons
+const listEl = document.getElementById('mood-list');
+MOODS.forEach(([name, p, a, d], i) => {
+  const btn = document.createElement('button');
+  btn.className = 'mood-btn';
+  btn.textContent = name;
+  btn.addEventListener('click', () => {
+    pSlider.value = p; aSlider.value = a; dSlider.value = d;
+    updateFromSliders();
+    nameEl.textContent = name;
+    document.querySelectorAll('.mood-btn.active').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+  listEl.appendChild(btn);
+});
+
+// Start
+updateFromSliders();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

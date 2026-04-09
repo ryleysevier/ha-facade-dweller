@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "moods.h"
+#include "emoji_fx.h"
 
 // Derived eye parameters — computed from PAD values
 struct EyeParams {
@@ -42,8 +43,8 @@ public:
   // Set emotion via PAD values (-1.0 to 1.0 each)
   void setEmotion(float pleasure, float arousal, float dominance);
 
-  // Set from a Mood struct
-  void setMood(const Mood &mood);
+  // Set from a Mood struct (with index for emoji lookup)
+  void setMood(const Mood &mood, int moodIndex = -1);
 
   // Call every frame
   void update();
@@ -54,6 +55,9 @@ public:
 private:
   uint16_t *fb;
   int16_t scrW, scrH, cx, cy;
+  EmojiFx *emojiFx;
+  int currentMoodIndex;
+  bool pupilReplaced; // true when emoji replaces pupil
 
   // Current and target eye params (for tweening)
   EyeParams current;

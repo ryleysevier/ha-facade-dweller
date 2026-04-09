@@ -39,7 +39,7 @@ void setup() {
   tft.fillScreen(0x0000);
 
   eye = new EyeRenderer(framebuffer, 240, 240);
-  eye->setMood(MOODS[0]);
+  eye->setMood(MOODS[0], 0);
   moodTimer = millis();
 
   Serial.printf("PAD Emotion Demo — %d moods\n", NUM_MOODS);
@@ -49,7 +49,7 @@ void loop() {
   if (millis() - moodTimer > MOOD_DISPLAY_MS) {
     moodTimer = millis();
     currentMood = (currentMood + 1) % NUM_MOODS;
-    eye->setMood(MOODS[currentMood]);
+    eye->setMood(MOODS[currentMood], currentMood);
     const Mood &m = MOODS[currentMood];
     Serial.printf("[%3d] %-20s P:%4d A:%4d D:%4d\n", currentMood, m.name, m.pleasure, m.arousal, m.dominance);
   }

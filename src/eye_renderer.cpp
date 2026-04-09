@@ -78,48 +78,68 @@ void EyeRenderer::padToEyeParams(float p, float a, float d, EyeParams &out) {
   a = constrain(a, -1.0f, 1.0f);
   d = constrain(d, -1.0f, 1.0f);
 
-  // EYE SIZE: arousal drives size (alert=big, calm=smaller)
-  //           pleasure adds slight enlargement (happy=bigger)
+  // === SQUASH & STRETCH ===
+  // Surprised/scared = tall narrow (stretch), angry = wide flat (squash)
+  // Calm/bored = small, excited = big
   float baseSize = 130.0f;
-  out.width  = baseSize + a * 25.0f + p * 10.0f;
-  out.height = baseSize + a * 30.0f + p * 15.0f;
-  // Dominance makes eye slightly wider (confident = wider gaze)
-  out.width += d * 10.0f;
+  out.height = baseSize + a * 35.0f + p * 10.0f;
+  out.width  = baseSize + a * 15.0f + p * 10.0f + d * 10.0f;
+  // Angry squash: wider, shorter
+  if (p < -0.3f && a > 0.3f && d > 0.0f) {
+    out.width  += 20.0f;
+    out.height -= 30.0f;
+  }
+  // Scared stretch: taller, narrower
+  if (p < -0.3f && a > 0.3f && d < -0.3f) {
+    out.height += 20.0f;
+    out.width  -= 10.0f;
+  }
 
-  // ROUNDNESS: pleasure = rounder, anger = more rectangular
-  out.roundness = 0.6f + p * 0.3f - (a > 0 && p < 0 ? 0.2f : 0.0f);
-  out.roundness = constrain(out.roundness, 0.2f, 1.0f);
+  // === SHAPE CORNERS (shape language) ===
+  // Round = friendly/innocent, angular = menacing
+  out.roundness = 0.65f + p * 0.25f;
+  if (p < -0.3f && a > 0.3f) out.roundness = 0.2f;  // angry = sharp corners
+  if (a > 0.7f && p >= 0)    out.roundness = 0.95f;  // surprised = perfectly round
+  if (p > 0.5f)              out.roundness = 0.85f;  // happy = very round
+  out.roundness = constrain(out.roundness, 0.15f, 1.0f);
 
-  // OPENNESS: arousal = wider open, low arousal = squinting/sleepy
+  // === OPENNESS ===
   out.openness = 0.7f + a * 0.25f;
-  if (a < -0.5f) out.openness -= 0.15f; // extra droop when very calm/sleepy
-  out.openness = constrain(out.openness, 0.15f, 1.0f);
+  if (a < -0.5f) out.openness -= 0.2f;
+  if (p < -0.3f && a > 0.3f && d > 0.0f) out.openness = 0.5f; // angry squint
+  if (a > 0.8f) out.openness = 1.0f; // surprised = wide open
+  out.openness = constrain(out.openness, 0.12f, 1.0f);
 
-  // PUPIL: arousal dilates pupil (fight/flight), pleasure slightly too
-  out.pupilSize = 0.35f + a * 0.15f + p * 0.05f;
-  out.pupilSize = constrain(out.pupilSize, 0.15f, 0.6f);
+  // === PUPIL SIZE (sclera visibility) ===
+  // Small pupil in big eye = lots of white = scared/surprised
+  // Big pupil filling eye = love/interest/content
+  out.pupilSize = 0.35f + p * 0.08f;
+  if (p > 0.5f)  out.pupilSize = 0.5f;  // love/happy = big warm pupil
+  if (p < -0.3f && a > 0.5f && d < 0) out.pupilSize = 0.18f; // scared = tiny (max sclera)
+  if (p < -0.3f && a > 0.3f && d > 0) out.pupilSize = 0.22f; // angry = small focused
+  if (a > 0.7f && p >= 0)  out.pupilSize = 0.25f; // surprised = smallish (shows whites)
+  out.pupilSize = constrain(out.pupilSize, 0.12f, 0.6f);
 
-  // GAZE: dominance affects gaze (dominant = direct, submissive = averted/down)
+  // === GAZE ===
   out.gazeX = 0;
-  out.gazeY = d * -0.15f; // dominant looks slightly up, submissive looks down
-  if (d < -0.3f) out.gazeX = -0.2f; // submissive looks slightly away
+  out.gazeY = d * -0.15f;
+  if (d < -0.3f) out.gazeX = -0.2f; // submissive averts gaze
 
-  // LID TOP: tired (low arousal, low pleasure) = droopy top lid
-  //          angry (high arousal, low pleasure) = angled down lid
+  // === LID TOP ===
   out.lidTop = 0.0f;
-  if (a < 0) out.lidTop = fabsf(a) * 0.4f;  // sleepy/calm = droop
-  if (p < -0.3f && a > 0.3f) out.lidTop = 0.2f; // angry = partial squint
+  if (a < 0) out.lidTop = fabsf(a) * 0.5f;  // sleepy/bored droop
+  if (p < -0.3f && a > 0.3f) out.lidTop = 0.45f; // angry heavy lid
 
-  // LID BOTTOM: happy = raised bottom (squinty smile), surprised = none
+  // === LID BOTTOM (happy squint) ===
   out.lidBottom = 0.0f;
-  if (p > 0.3f) out.lidBottom = p * 0.35f;  // happy squint
-  if (a > 0.7f && p >= 0) out.lidBottom = 0.0f; // surprised overrides squint
+  if (p > 0.3f) out.lidBottom = p * 0.4f;
+  if (a > 0.7f && p >= 0) out.lidBottom = 0.0f; // surprised = no bottom squint
 
-  // LID ANGLE: angry = inner corners up (-), tired = outer up (+)
+  // === LID ANGLE ===
   out.lidAngle = 0.0f;
-  if (p < -0.3f && a > 0.3f) out.lidAngle = -0.5f - p * 0.3f;  // angry
-  if (p < 0 && a < -0.3f)    out.lidAngle = 0.3f + fabsf(a) * 0.2f; // tired/sad
-  if (d > 0.5f && p < 0)     out.lidAngle -= 0.2f; // dominant + unhappy = more angry
+  if (p < -0.3f && a > 0.3f) out.lidAngle = -0.6f - p * 0.3f; // angry V
+  if (p < 0 && a < -0.3f)    out.lidAngle = 0.4f + fabsf(a) * 0.2f; // sad/tired
+  if (d > 0.5f && p < 0)     out.lidAngle -= 0.2f;
   out.lidAngle = constrain(out.lidAngle, -1.0f, 1.0f);
 
   // COLOR: emotion → hue
@@ -214,12 +234,14 @@ uint16_t EyeRenderer::bgColor(float p, float a, float d) {
 EyeRenderer::EyeRenderer(uint16_t *framebuffer, int16_t width, int16_t height)
   : fb(framebuffer), scrW(width), scrH(height),
     cx(width / 2), cy(height / 2),
+    currentMoodIndex(-1),
     tweenT(1.0f), lastMs(0),
     blinkTimer(3.0f), blinkPhase(0), isBlinking(false),
     saccadeX(0), saccadeY(0), saccadeTimer(0),
     breathPhase(0),
     gazeTargetX(0), gazeTargetY(0),
     gazeCurrentX(0), gazeCurrentY(0), gazeTimer(0) {
+  emojiFx = new EmojiFx(framebuffer, width, height);
   memset(&current, 0, sizeof(EyeParams));
   memset(&target, 0, sizeof(EyeParams));
   // Init to neutral
@@ -234,8 +256,17 @@ void EyeRenderer::setEmotion(float pleasure, float arousal, float dominance) {
   tweenT = 0.0f;
 }
 
-void EyeRenderer::setMood(const Mood &mood) {
+void EyeRenderer::setMood(const Mood &mood, int moodIndex) {
   setEmotion(padToFloat(mood.pleasure), padToFloat(mood.arousal), padToFloat(mood.dominance));
+  currentMoodIndex = moodIndex;
+  pupilReplaced = false;
+  EmojiEffect effect;
+  if (moodIndex >= 0 && getMoodEmoji(moodIndex, effect)) {
+    emojiFx->setEffect(effect);
+    if (effect.pattern == EMOJI_PUPIL_REPLACE) pupilReplaced = true;
+  } else {
+    emojiFx->clearEffect();
+  }
 }
 
 void EyeRenderer::blink() {
@@ -365,28 +396,50 @@ void EyeRenderer::update() {
     gazeTargetY = render.gazeY + (random(-100, 100) / 100.0f) * render.saccadeAmount * 0.2f;
     gazeTimer = 1.0f + random(0, 2000) / 1000.0f;
   }
-  // Smooth gaze movement
+  // Smooth gaze with overshoot (saccade dart: fast move → overshoot → settle)
   float gazeSpeed = render.moveSpeed * dt;
-  gazeCurrentX += (gazeTargetX - gazeCurrentX) * gazeSpeed;
-  gazeCurrentY += (gazeTargetY - gazeCurrentY) * gazeSpeed;
+  float dx = gazeTargetX - gazeCurrentX;
+  float dy = gazeTargetY - gazeCurrentY;
+  float dist = sqrtf(dx * dx + dy * dy);
+  if (dist > 0.01f) {
+    // Fast initial dart with 15% overshoot
+    float overshoot = 1.15f;
+    gazeCurrentX += dx * gazeSpeed * overshoot;
+    gazeCurrentY += dy * gazeSpeed * overshoot;
+  } else {
+    // Settle back to target (spring damping)
+    gazeCurrentX += (gazeTargetX - gazeCurrentX) * 0.3f;
+    gazeCurrentY += (gazeTargetY - gazeCurrentY) * 0.3f;
+  }
 
   // --- Breathing ---
   breathPhase += dt * 1.5f;
   float breathScale = 1.0f + sinf(breathPhase) * 0.015f;
 
   // --- Compute geometry for TWO EYES ---
-  float gap = 12.0f; // space between eyes
-  float eyeW = render.width * 0.42f * breathScale; // each eye is ~42% of mood width
-  float eyeH = render.height * 0.55f * render.openness * breathScale;
-  eyeH *= (1.0f - bf); // blink closes eyes
-  eyeH = max(3.0f, eyeH);
+  float gap = 12.0f;
+  float baseEyeW = render.width * 0.42f * breathScale;
+  float baseEyeH = render.height * 0.55f * render.openness * breathScale;
+  baseEyeH *= (1.0f - bf);
+  baseEyeH = max(3.0f, baseEyeH);
+
+  // Subtle asymmetry: right eye ~3% smaller (natural imperfection)
+  float asymmetry = 0.97f;
+  float eyeWL = baseEyeW, eyeHL = baseEyeH;
+  float eyeWR = baseEyeW * asymmetry, eyeHR = baseEyeH * asymmetry;
+
+  // Store per-eye sizes for the loop
+  float eyeWArr[2] = {eyeWL, eyeWR};
+  float eyeHArr[2] = {eyeHL, eyeHR};
+
+  float eyeW = baseEyeW; // for positioning
+  float eyeH = baseEyeH;
 
   float roundR = render.roundness * min(eyeW, eyeH) * 0.5f;
 
-  // Left eye center, right eye center
   float lcx = cx - gap / 2 - eyeW / 2;
   float rcx = cx + gap / 2 + eyeW / 2;
-  float ecy = cy; // vertical center
+  float ecy = cy;
 
   // Colors
   uint16_t eyeCol  = hsv565(render.hue, render.saturation, render.brightness);
@@ -410,7 +463,10 @@ void EyeRenderer::update() {
   // Draw each eye
   for (int side = 0; side < 2; side++) {
     float ecx = (side == 0) ? lcx : rcx;
-    int mirror = (side == 0) ? 1 : -1; // mirror lid angles for right eye
+    int mirror = (side == 0) ? 1 : -1;
+    float eyeW = eyeWArr[side];
+    float eyeH = eyeHArr[side];
+    float roundR = render.roundness * min(eyeW, eyeH) * 0.5f;
 
     int16_t ex = (int16_t)(ecx - eyeW / 2);
     int16_t ey = (int16_t)(ecy - eyeH / 2);
@@ -418,8 +474,8 @@ void EyeRenderer::update() {
     // Eye body
     fbFillRoundRect(ex, ey, (int16_t)eyeW, (int16_t)eyeH, (int16_t)roundR, eyeCol);
 
-    // Pupil
-    if (eyeH > 8) {
+    // Pupil (skip if emoji replaces it)
+    if (eyeH > 8 && !pupilReplaced) {
       float pupR = render.pupilSize * min(eyeW, eyeH) * 0.45f;
       pupR = max(4.0f, pupR);
       float maxGazeX = (eyeW * 0.5f - pupR - 3);
@@ -431,28 +487,43 @@ void EyeRenderer::update() {
       fbFillCircle(px, py, (int16_t)pupR, pupilCol);
       // Inner dark core
       fbFillCircle(px, py, max((int16_t)2, (int16_t)(pupR * 0.4f)), 0x0000);
-      // Specular highlight
-      int16_t hlR = max((int16_t)1, (int16_t)(pupR * 0.22f));
-      fbFillCircle(px - (int16_t)(pupR * 0.25f), py - (int16_t)(pupR * 0.25f), hlR, 0xFFFF);
+      // Specular highlight — follows gaze direction (Pixar technique)
+      // Highlight shifts opposite to gaze (light source stays fixed, eye moves)
+      int16_t hlR = max((int16_t)2, (int16_t)(pupR * 0.28f));
+      float hlOffX = -gazeCurrentX * pupR * 0.15f - pupR * 0.2f;
+      float hlOffY = -gazeCurrentY * pupR * 0.15f - pupR * 0.25f;
+      fbFillCircle(px + (int16_t)hlOffX, py + (int16_t)hlOffY, hlR, 0xFFFF);
+      // Secondary smaller highlight (adds life)
+      int16_t hl2R = max((int16_t)1, (int16_t)(pupR * 0.12f));
+      fbFillCircle(px + (int16_t)(hlOffX * 0.3f) + (int16_t)(pupR * 0.15f),
+                    py + (int16_t)(hlOffY * 0.3f) + (int16_t)(pupR * 0.2f),
+                    hl2R, 0xFFFF);
     }
 
     // --- Eyelids (mirrored for left/right) ---
 
-    // Top lid: angry = inner corners down (angle mirrored per eye)
+    // Top lid: angry (lidAngle negative) = inner corners come DOWN
     float topDroop = render.lidTop;
-    float angleOff = render.lidAngle * mirror;
-    if (topDroop > 0.01f || fabsf(angleOff) > 0.01f) {
+    if (topDroop > 0.01f || fabsf(render.lidAngle) > 0.01f) {
       int16_t droopPx = (int16_t)(topDroop * eyeH * 0.6f);
-      int16_t anglePx = (int16_t)(angleOff * eyeW * 0.3f);
+      float rawLidAnglePx = render.lidAngle * eyeW * 0.3f;
+      // Inner edge toward nose, outer toward ear
+      int16_t innerX = (side == 0) ? ex + (int16_t)eyeW + 6 : ex - 6;
+      int16_t outerX = (side == 0) ? ex - 6 : ex + (int16_t)eyeW + 6;
+      // Angry (negative angle) = inner drops MORE (higher Y)
+      int16_t innerDroop = droopPx + (int16_t)(-rawLidAnglePx);
+      int16_t outerDroop = droopPx + (int16_t)(rawLidAnglePx);
+
+      // Lid as a quad covering top of eye
       fbFillTriangle(
-        ex - 6, ey - 6,
-        ex + (int16_t)eyeW + 6, ey - 6,
-        ex - 6 + anglePx, ey + droopPx,
+        innerX, ey - 6,
+        outerX, ey - 6,
+        innerX, ey + max((int16_t)0, innerDroop),
         bgCol);
       fbFillTriangle(
-        ex + (int16_t)eyeW + 6, ey - 6,
-        ex + (int16_t)eyeW + 6 - anglePx, ey + droopPx,
-        ex - 6 + anglePx, ey + droopPx,
+        outerX, ey - 6,
+        outerX, ey + max((int16_t)0, outerDroop),
+        innerX, ey + max((int16_t)0, innerDroop),
         bgCol);
     }
 
@@ -467,40 +538,16 @@ void EyeRenderer::update() {
         bgCol);
     }
 
-    // --- Eyebrow (curved, can cut into eye) ---
-    {
-      float browW = eyeW * 1.1f;
-      float browH = 6.0f + render.browThickness * 10.0f;
-      float browBaseY = ey - 4.0f - render.browHeight * eyeH * 0.4f;
-      float rawAnglePx = render.browAngle * eyeW * 0.2f;
-      float curveAmt = render.browCurve * eyeH * 0.25f; // max curve displacement
-
-      uint16_t browCol = hsv565(render.hue, render.saturation * 0.4f, render.brightness * 0.35f);
-
-      int16_t bx = (int16_t)(ecx - browW / 2);
-      int steps = (int)browW;
-
-      for (int i = 0; i < steps; i++) {
-        float t = (float)i / (float)(steps - 1); // 0..1 across brow width
-
-        // X position
-        int16_t sx = bx + i;
-
-        // Angle: linear interpolation from inner to outer
-        // Inner is the side closer to nose
-        float angleT = (side == 0) ? (1.0f - t) : t; // 0=outer, 1=inner for both eyes
-        float angleY = rawAnglePx * (1.0f - 2.0f * angleT); // inner goes opposite
-
-        // Curve: parabola peaking at center of brow (t=0.5)
-        // Positive curve = arch up (lower Y), negative = sag down (higher Y)
-        float curveY = -curveAmt * 4.0f * (t - 0.5f) * (t - 0.5f) + curveAmt;
-        // curveY is max at center, 0 at edges
-
-        float finalY = browBaseY + angleY - curveY;
-
-        // Draw a vertical strip
-        fbFillRect(sx, (int16_t)finalY, 1, (int16_t)browH, browCol);
-      }
-    }
+    // --- Eyebrow (disabled for now) ---
   }
+
+  // --- Emoji overlay effects ---
+  // Pass eye geometry for positioning
+  int16_t eLx = (int16_t)lcx, eRx = (int16_t)rcx;
+  int16_t eY = (int16_t)ecy;
+  // Approximate pupil positions (center of each eye + gaze offset)
+  int16_t pLx = (int16_t)(lcx + gazeCurrentX * baseEyeW * 0.15f);
+  int16_t pRx = (int16_t)(rcx + gazeCurrentX * baseEyeW * 0.15f);
+  int16_t pY  = (int16_t)(ecy + gazeCurrentY * baseEyeH * 0.15f);
+  emojiFx->update(dt, eLx, eRx, eY, (int16_t)baseEyeW, (int16_t)baseEyeH, pLx, pRx, pY);
 }

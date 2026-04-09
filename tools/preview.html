@@ -20,6 +20,9 @@
   #mood-list {
     display: flex; flex-wrap: wrap; gap: 4px; max-height: 300px; overflow-y: auto;
   }
+  #nav-hint { font-size: 11px; color: #555; margin-top: 4px; }
+  #mood-counter { font-size: 14px; color: #888; font-family: monospace; }
+  .mood-btn.has-emoji { border-color: #e94560; }
   .mood-btn {
     padding: 4px 8px; font-size: 11px; border: 1px solid #333; border-radius: 4px;
     background: #1a1a2e; color: #ccc; cursor: pointer; transition: all 0.15s;
@@ -52,8 +55,10 @@
 </div>
 
 <div id="main">
+  <div id="mood-counter">0 / 200</div>
   <div id="mood-name">neutral</div>
   <canvas id="eye" width="240" height="240"></canvas>
+  <div id="nav-hint">← → arrow keys to step &nbsp;|&nbsp; Space = autoplay &nbsp;|&nbsp; Click any preset</div>
 </div>
 
 <script>
@@ -119,33 +124,44 @@ function padToEye(p, a, d) {
   d = Math.max(-1, Math.min(1, d));
 
   const baseSize = 130;
-  let width = baseSize + a * 25 + p * 10 + d * 10;
-  let height = baseSize + a * 30 + p * 15;
+  let height = baseSize + a * 35 + p * 10;
+  let width = baseSize + a * 15 + p * 10 + d * 10;
+  if (p < -0.3 && a > 0.3 && d > 0) { width += 20; height -= 30; }
+  if (p < -0.3 && a > 0.3 && d < -0.3) { height += 20; width -= 10; }
 
-  let roundness = 0.6 + p * 0.3 - (a > 0 && p < 0 ? 0.2 : 0);
-  roundness = Math.max(0.2, Math.min(1, roundness));
+  let roundness = 0.65 + p * 0.25;
+  if (p < -0.3 && a > 0.3) roundness = 0.2;
+  if (a > 0.7 && p >= 0) roundness = 0.95;
+  if (p > 0.5) roundness = 0.85;
+  roundness = Math.max(0.15, Math.min(1, roundness));
 
   let openness = 0.7 + a * 0.25;
-  if (a < -0.5) openness -= 0.15;
-  openness = Math.max(0.15, Math.min(1, openness));
+  if (a < -0.5) openness -= 0.2;
+  if (p < -0.3 && a > 0.3 && d > 0) openness = 0.5;
+  if (a > 0.8) openness = 1.0;
+  openness = Math.max(0.12, Math.min(1, openness));
 
-  let pupilSize = 0.35 + a * 0.15 + p * 0.05;
-  pupilSize = Math.max(0.15, Math.min(0.6, pupilSize));
+  let pupilSize = 0.35 + p * 0.08;
+  if (p > 0.5) pupilSize = 0.5;
+  if (p < -0.3 && a > 0.5 && d < 0) pupilSize = 0.18;
+  if (p < -0.3 && a > 0.3 && d > 0) pupilSize = 0.22;
+  if (a > 0.7 && p >= 0) pupilSize = 0.25;
+  pupilSize = Math.max(0.12, Math.min(0.6, pupilSize));
 
   let gazeX = 0, gazeY = d * -0.15;
   if (d < -0.3) gazeX = -0.2;
 
   let lidTop = 0;
-  if (a < 0) lidTop = Math.abs(a) * 0.4;
-  if (p < -0.3 && a > 0.3) lidTop = 0.2;
+  if (a < 0) lidTop = Math.abs(a) * 0.5;
+  if (p < -0.3 && a > 0.3) lidTop = 0.45;
 
   let lidBottom = 0;
-  if (p > 0.3) lidBottom = p * 0.35;
+  if (p > 0.3) lidBottom = p * 0.4;
   if (a > 0.7 && p >= 0) lidBottom = 0;
 
   let lidAngle = 0;
-  if (p < -0.3 && a > 0.3) lidAngle = -0.5 - p * 0.3;
-  if (p < 0 && a < -0.3) lidAngle = 0.3 + Math.abs(a) * 0.2;
+  if (p < -0.3 && a > 0.3) lidAngle = -0.6 - p * 0.3;
+  if (p < 0 && a < -0.3) lidAngle = 0.4 + Math.abs(a) * 0.2;
   if (d > 0.5 && p < 0) lidAngle -= 0.2;
   lidAngle = Math.max(-1, Math.min(1, lidAngle));
 
@@ -206,6 +222,31 @@ function hsvToRgb(h, s, v) {
   else [r,g,b] = [c,0,x];
   return `rgb(${Math.round((r+m)*255)},${Math.round((g+m)*255)},${Math.round((b+m)*255)})`;
 }
+
+// --- Emoji map (matches emoji_fx.cpp) ---
+const EMOJI_MAP = {
+  1:   {pattern: 'tear_drop',     emoji: '💧'},
+  6:   {pattern: 'eye_sparkle',   emoji: '⭐'},
+  9:   {pattern: 'pupil_replace', emoji: '❤️'},
+  15:  {pattern: 'tear_drop',     emoji: '💧'},
+  18:  {pattern: 'orbit',         emoji: '❓'},
+  22:  {pattern: 'tear_drop',     emoji: '💧'},
+  33:  {pattern: 'bg_fill',       emoji: '🎵'},
+  45:  {pattern: 'pulse_center',  emoji: '⚠️'},
+  57:  {pattern: 'side_peek',     emoji: '📦'},
+  59:  {pattern: 'pulse_center',  emoji: '⚠️'},
+  89:  {pattern: 'float_above',   emoji: '💤'},
+  90:  {pattern: 'side_peek',     emoji: '🔔'},
+  96:  {pattern: 'bg_fill',       emoji: '🎉'},
+  98:  {pattern: 'rain_down',     emoji: '💧', emoji2: '☁️'},
+  102: {pattern: 'rain_down',     emoji: '❄️'},
+  109: {pattern: 'rain_down',     emoji: '💧'},
+  132: {pattern: 'bottom_status', emoji: '☕'},
+  164: {pattern: 'bg_fill',       emoji: '🎉'},
+  180: {pattern: 'pupil_replace', emoji: '⭐'},
+  184: {pattern: 'rain_down',     emoji: '💧', emoji2: '⛈️'},
+};
+let activeMoodIdx = -1;
 
 // --- Animation state ---
 let currentEye = padToEye(0, 0, 0);
@@ -328,8 +369,9 @@ function render() {
     ctx.roundRect(ex, ey, eyeW, eyeH, rr);
     ctx.fill();
 
-    // Pupil
-    if (eyeH > 8) {
+    // Pupil (skip if emoji replaces it)
+    let isPupilReplaced = activeMoodIdx >= 0 && EMOJI_MAP[activeMoodIdx] && EMOJI_MAP[activeMoodIdx].pattern === 'pupil_replace';
+    if (eyeH > 8 && !isPupilReplaced) {
       let pupR = e.pupilSize * Math.min(eyeW, eyeH) * 0.45;
       pupR = Math.max(4, pupR);
       let mgx = eyeW * 0.5 - pupR - 3;
@@ -347,17 +389,20 @@ function render() {
       ctx.beginPath(); ctx.arc(px - pupR*0.25, py - pupR*0.25, Math.max(1, pupR*0.22), 0, Math.PI*2); ctx.fill();
     }
 
-    // Top lid
-    let angleOff = e.lidAngle * mirror;
-    if (e.lidTop > 0.01 || Math.abs(angleOff) > 0.01) {
+    // Top lid: angry (lidAngle negative) = inner corners come DOWN
+    if (e.lidTop > 0.01 || Math.abs(e.lidAngle) > 0.01) {
       let droopPx = e.lidTop * eyeH * 0.6;
-      let anglePx = angleOff * eyeW * 0.3;
+      let rawLidAnglePx = e.lidAngle * eyeW * 0.3;
+      let innerX = (side === 0) ? ex + eyeW + 6 : ex - 6;
+      let outerX = (side === 0) ? ex - 6 : ex + eyeW + 6;
+      let innerDroop = droopPx + (-rawLidAnglePx);
+      let outerDroop = droopPx + rawLidAnglePx;
       ctx.fillStyle = bgCol;
       ctx.beginPath();
-      ctx.moveTo(ex - 6, ey - 6);
-      ctx.lineTo(ex + eyeW + 6, ey - 6);
-      ctx.lineTo(ex + eyeW + 6 - anglePx, ey + droopPx);
-      ctx.lineTo(ex - 6 + anglePx, ey + droopPx);
+      ctx.moveTo(innerX, ey - 6);
+      ctx.lineTo(outerX, ey - 6);
+      ctx.lineTo(outerX, ey + Math.max(0, outerDroop));
+      ctx.lineTo(innerX, ey + Math.max(0, innerDroop));
       ctx.fill();
     }
 
@@ -373,39 +418,98 @@ function render() {
       ctx.fill();
     }
 
-    // Eyebrow — curved, can cut into eye space
-    {
-      let browW = eyeW * 1.1;
-      let browH = 6 + e.browThickness * 10;
-      let browBaseY = ey - 4 - e.browHeight * eyeH * 0.4;
-      let rawAnglePx = e.browAngle * eyeW * 0.2;
-      let curveAmt = e.browCurve * eyeH * 0.25;
+    // Eyebrow (disabled for now)
+  }
 
-      let bx = ecx - browW / 2;
+  // --- Emoji effects ---
+  if (activeMoodIdx >= 0 && EMOJI_MAP[activeMoodIdx]) {
+    const fx = EMOJI_MAP[activeMoodIdx];
+    const emojiPhase = performance.now() / 1000;
+    const pupLx = lcx + gazeX * eyeW * 0.15;
+    const pupRx = rcx + gazeX * eyeW * 0.15;
+    const pupY = cyc + gazeY * eyeH * 0.15;
 
-      ctx.fillStyle = hsvToRgb(e.hue, e.sat * 0.4, e.bri * 0.35);
+    ctx.font = `${fx.size || 16}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
-      // Build top and bottom edges of curved brow as paths
-      let topPoints = [];
-      let botPoints = [];
-      let steps = 20;
-      for (let i = 0; i <= steps; i++) {
-        let t = i / steps;
-        let sx = bx + t * browW;
-        let angleT = (side === 0) ? (1 - t) : t;
-        let angleY = rawAnglePx * (1 - 2 * angleT);
-        let curveY = -curveAmt * 4 * (t - 0.5) * (t - 0.5) + curveAmt;
-        let finalY = browBaseY + angleY - curveY;
-        topPoints.push([sx, finalY]);
-        botPoints.push([sx, finalY + browH]);
+    if (fx.pattern === 'pupil_replace' && eyeH > 10) {
+      ctx.font = `${Math.max(10, eyeH * 0.4)}px serif`;
+      ctx.fillText(fx.emoji, pupLx, pupY);
+      ctx.fillText(fx.emoji, pupRx, pupY);
+    }
+    else if (fx.pattern === 'float_above') {
+      let bobY = Math.sin(emojiPhase * 2) * 5;
+      let driftX = Math.sin(emojiPhase * 0.7) * 8;
+      ctx.font = '24px serif';
+      ctx.fillText(fx.emoji, cxc + driftX + 15, cyc - eyeH * 0.35 - 20 + bobY);
+      ctx.font = '14px serif';
+      ctx.fillText(fx.emoji, cxc + driftX - 10, cyc - eyeH * 0.35 - 12 + bobY);
+    }
+    else if (fx.pattern === 'rain_down') {
+      if (!fx._particles) {
+        fx._particles = [];
+        for (let i = 0; i < 6; i++) fx._particles.push({x: 30 + Math.random()*180, y: Math.random()*-40});
       }
-
-      ctx.beginPath();
-      ctx.moveTo(topPoints[0][0], topPoints[0][1]);
-      for (let i = 1; i < topPoints.length; i++) ctx.lineTo(topPoints[i][0], topPoints[i][1]);
-      for (let i = botPoints.length - 1; i >= 0; i--) ctx.lineTo(botPoints[i][0], botPoints[i][1]);
-      ctx.closePath();
-      ctx.fill();
+      ctx.font = '12px serif';
+      for (let p of fx._particles) {
+        p.y += 1.5;
+        if (p.y > 250) { p.y = -20; p.x = 30 + Math.random()*180; }
+        ctx.fillText(fx.emoji, p.x, p.y);
+      }
+      if (fx.emoji2) {
+        ctx.font = '28px serif';
+        ctx.fillText(fx.emoji2, cxc, 28);
+      }
+    }
+    else if (fx.pattern === 'orbit') {
+      for (let i = 0; i < 3; i++) {
+        let angle = emojiPhase * 2 + i * (Math.PI * 2 / 3);
+        let ox = cxc + Math.cos(angle) * 70;
+        let oy = cyc + Math.sin(angle) * 50;
+        ctx.fillText(fx.emoji, ox, oy);
+      }
+    }
+    else if (fx.pattern === 'eye_sparkle') {
+      let sparkle = (Math.sin(emojiPhase * 5) + 1) * 0.5;
+      if (sparkle > 0.6) {
+        ctx.font = '10px serif';
+        ctx.fillText(fx.emoji, pupLx - 5, pupY - 8);
+        ctx.fillText(fx.emoji, pupRx - 5, pupY - 8);
+      }
+    }
+    else if (fx.pattern === 'bottom_status') {
+      let bobY = Math.sin(emojiPhase * 1.5) * 2;
+      ctx.font = '24px serif';
+      ctx.fillText(fx.emoji, cxc, cyc + eyeH * 0.35 + 25 + bobY);
+    }
+    else if (fx.pattern === 'bg_fill') {
+      ctx.font = '12px serif';
+      for (let i = 0; i < 6; i++) {
+        let ox = Math.sin(emojiPhase * 0.3 + i * 1.5) * 10;
+        let oy = Math.cos(emojiPhase * 0.4 + i * 1.2) * 10;
+        let bx = 30 + (i % 3) * 80 + ox;
+        let by = 30 + Math.floor(i / 3) * 170 + oy;
+        ctx.fillText(fx.emoji, bx, by);
+      }
+    }
+    else if (fx.pattern === 'side_peek') {
+      let peekX = Math.sin(Math.min(emojiPhase * 2, Math.PI / 2));
+      ctx.font = '28px serif';
+      ctx.fillText(fx.emoji, 240 - peekX * 35, cyc - 20);
+    }
+    else if (fx.pattern === 'pulse_center') {
+      let pulse = (Math.sin(emojiPhase * 4) + 1) * 0.5;
+      let sz = 16 + pulse * 16;
+      ctx.font = `${sz}px serif`;
+      ctx.fillText(fx.emoji, cxc, cyc - 5);
+    }
+    else if (fx.pattern === 'tear_drop') {
+      let tearY = (emojiPhase * 0.5) % 1.5;
+      if (tearY < 1) {
+        ctx.font = '10px serif';
+        ctx.fillText(fx.emoji, lcx - eyeW * 0.35, cyc + eyeH * 0.25 + tearY * 20);
+      }
     }
   }
 
@@ -433,28 +537,78 @@ function updateFromSliders() {
   document.querySelectorAll('.mood-btn.active').forEach(b => b.classList.remove('active'));
 }
 
-pSlider.addEventListener('input', () => { updateFromSliders(); nameEl.textContent = 'custom'; });
-aSlider.addEventListener('input', () => { updateFromSliders(); nameEl.textContent = 'custom'; });
-dSlider.addEventListener('input', () => { updateFromSliders(); nameEl.textContent = 'custom'; });
+pSlider.addEventListener('input', () => { updateFromSliders(); nameEl.textContent = 'custom'; activeMoodIdx = -1; });
+aSlider.addEventListener('input', () => { updateFromSliders(); nameEl.textContent = 'custom'; activeMoodIdx = -1; });
+dSlider.addEventListener('input', () => { updateFromSliders(); nameEl.textContent = 'custom'; activeMoodIdx = -1; });
+
+// Moods with emoji effects (matches emoji_fx.cpp getMoodEmoji)
+const EMOJI_MOODS = new Set([1,6,9,15,18,22,33,45,57,59,89,90,96,98,102,109,132,164,180,184]);
 
 // Build mood buttons
 const listEl = document.getElementById('mood-list');
+const moodBtns = [];
+const counterEl = document.getElementById('mood-counter');
+let currentMoodIdx = 0;
+let autoplayTimer = null;
+
+function selectMood(i) {
+  const [name, p, a, d] = MOODS[i];
+  currentMoodIdx = i;
+  activeMoodIdx = i;
+  // Reset rain particles when switching moods
+  if (EMOJI_MAP[i] && EMOJI_MAP[i]._particles) delete EMOJI_MAP[i]._particles;
+  pSlider.value = p; aSlider.value = a; dSlider.value = d;
+  updateFromSliders();
+  nameEl.textContent = name + (EMOJI_MOODS.has(i) ? ' ✨' : '');
+  counterEl.textContent = `${i} / ${MOODS.length}`;
+  document.querySelectorAll('.mood-btn.active').forEach(b => b.classList.remove('active'));
+  if (moodBtns[i]) {
+    moodBtns[i].classList.add('active');
+    moodBtns[i].scrollIntoView({ block: 'nearest' });
+  }
+}
+
 MOODS.forEach(([name, p, a, d], i) => {
   const btn = document.createElement('button');
-  btn.className = 'mood-btn';
+  btn.className = 'mood-btn' + (EMOJI_MOODS.has(i) ? ' has-emoji' : '');
   btn.textContent = name;
-  btn.addEventListener('click', () => {
-    pSlider.value = p; aSlider.value = a; dSlider.value = d;
-    updateFromSliders();
-    nameEl.textContent = name;
-    document.querySelectorAll('.mood-btn.active').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  });
+  btn.addEventListener('click', () => selectMood(i));
   listEl.appendChild(btn);
+  moodBtns.push(btn);
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', (ev) => {
+  if (ev.target.tagName === 'INPUT') return; // don't hijack slider input
+  if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
+    ev.preventDefault();
+    selectMood((currentMoodIdx + 1) % MOODS.length);
+  } else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') {
+    ev.preventDefault();
+    selectMood((currentMoodIdx - 1 + MOODS.length) % MOODS.length);
+  } else if (ev.key === ' ') {
+    ev.preventDefault();
+    if (autoplayTimer) {
+      clearInterval(autoplayTimer);
+      autoplayTimer = null;
+    } else {
+      autoplayTimer = setInterval(() => {
+        selectMood((currentMoodIdx + 1) % MOODS.length);
+      }, 2000);
+    }
+  } else if (ev.key === 'e') {
+    // Jump to next emoji mood
+    let next = currentMoodIdx;
+    for (let j = 0; j < MOODS.length; j++) {
+      next = (next + 1) % MOODS.length;
+      if (EMOJI_MOODS.has(next)) break;
+    }
+    selectMood(next);
+  }
 });
 
 // Start
-updateFromSliders();
+selectMood(0);
 requestAnimationFrame(render);
 </script>
 </body>

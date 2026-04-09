@@ -43,8 +43,11 @@ public:
   // Set emotion via PAD values (-1.0 to 1.0 each)
   void setEmotion(float pleasure, float arousal, float dominance);
 
-  // Set from a Mood struct (with index for emoji lookup)
+  // Set from a Mood struct (with index for emoji lookup + hue overrides)
   void setMood(const Mood &mood, int moodIndex = -1);
+
+  // Apply category-based hue overrides
+  static void applyHueOverride(int moodIndex, EyeParams &params);
 
   // Call every frame
   void update();

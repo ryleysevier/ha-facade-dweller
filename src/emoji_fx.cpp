@@ -68,6 +68,123 @@ bool getMoodEmoji(int moodIndex, EmojiEffect &effect) {
     case 96:  // party_mode
       effect = {EMOJI_BG_FILL, ICON_ID_PARTY, ICON_ID_COUNT, 0xF81F}; // magenta confetti
       return true;
+
+    // --- NEW: differentiating similar moods with emojis ---
+
+    // Weather differentiation
+    case 100: // sunny
+      effect = {EMOJI_FLOAT_ABOVE, ICON_ID_STAR, ICON_ID_COUNT, 0xFFE0}; // sun-like star above
+      return true;
+    case 101: // cloudy
+      effect = {EMOJI_FLOAT_ABOVE, ICON_ID_CLOUD, ICON_ID_COUNT, 0xBDF7}; // grey cloud
+      return true;
+    case 103: // windy
+      effect = {EMOJI_ORBIT, ICON_ID_CLOUD, ICON_ID_COUNT, 0xBDF7}; // clouds swirling
+      return true;
+    case 185: // snowfall
+      effect = {EMOJI_RAIN_DOWN, ICON_ID_SNOW, ICON_ID_COUNT, 0xFFFF};
+      return true;
+    case 186: // wind_howling
+      effect = {EMOJI_ORBIT, ICON_ID_CLOUD, ICON_ID_COUNT, 0x9CF3};
+      return true;
+    case 187: // heatwave
+      effect = {EMOJI_TEAR_DROP, ICON_ID_DROP, ICON_ID_COUNT, 0x5D7F}; // sweat
+      return true;
+
+    // Home utility differentiation
+    case 48: // heating_on
+      effect = {EMOJI_FLOAT_ABOVE, ICON_ID_STAR, ICON_ID_COUNT, 0xFBE0}; // warm glow
+      return true;
+    case 49: // cooling_on
+      effect = {EMOJI_FLOAT_ABOVE, ICON_ID_SNOW, ICON_ID_COUNT, 0x5D7F}; // cool snowflake
+      return true;
+    case 50: // vacuum_running
+      effect = {EMOJI_ORBIT, ICON_ID_STAR, ICON_ID_COUNT, 0xBDF7}; // spinning dust
+      return true;
+    case 43: // washer_running
+      effect = {EMOJI_ORBIT, ICON_ID_DROP, ICON_ID_COUNT, 0x5D7F}; // spinning water
+      return true;
+    case 52: // battery_low
+      effect = {EMOJI_PULSE_CENTER, ICON_ID_BOLT, ICON_ID_COUNT, 0xF800}; // red bolt pulsing
+      return true;
+    case 53: // battery_full
+      effect = {EMOJI_BOTTOM_STATUS, ICON_ID_BOLT, ICON_ID_COUNT, 0x07E0}; // green bolt
+      return true;
+    case 54: // internet_down
+      effect = {EMOJI_PULSE_CENTER, ICON_ID_WARN, ICON_ID_COUNT, 0xFBE0};
+      return true;
+
+    // Holiday differentiation
+    case 160: // christmas
+      effect = {EMOJI_BG_FILL, ICON_ID_STAR, ICON_ID_COUNT, 0xFFE0}; // stars
+      return true;
+    case 161: // halloween
+      effect = {EMOJI_BG_FILL, ICON_ID_STAR, ICON_ID_COUNT, 0xFBE0}; // orange stars
+      return true;
+    case 162: // valentines
+      effect = {EMOJI_PUPIL_REPLACE, ICON_ID_HEART, ICON_ID_COUNT, 0xF81F}; // pink hearts
+      return true;
+    case 163: // new_years
+      effect = {EMOJI_BG_FILL, ICON_ID_PARTY, ICON_ID_COUNT, 0xFFE0};
+      return true;
+    case 165: // fireworks
+      effect = {EMOJI_EYE_SPARKLE, ICON_ID_STAR, ICON_ID_COUNT, 0xFFFF};
+      return true;
+
+    // Time-of-day differentiation
+    case 66:  // tired
+      effect = {EMOJI_FLOAT_ABOVE, ICON_ID_ZZZ, ICON_ID_COUNT, 0x9CF3};
+      return true;
+    case 67:  // exhausted
+      effect = {EMOJI_FLOAT_ABOVE, ICON_ID_ZZZ, ICON_ID_COUNT, 0x7BEF};
+      return true;
+    case 95:  // everyone_asleep
+      effect = {EMOJI_FLOAT_ABOVE, ICON_ID_ZZZ, ICON_ID_COUNT, 0x9CF3};
+      return true;
+    case 129: // goodnight
+      effect = {EMOJI_FLOAT_ABOVE, ICON_ID_ZZZ, ICON_ID_COUNT, 0xBDF7};
+      return true;
+    case 154: // naptime
+      effect = {EMOJI_FLOAT_ABOVE, ICON_ID_ZZZ, ICON_ID_COUNT, 0x9CF3};
+      return true;
+
+    // Alert/notification differentiation
+    case 104: // motion_detected
+      effect = {EMOJI_PULSE_CENTER, ICON_ID_WARN, ICON_ID_COUNT, 0xFFE0};
+      return true;
+    case 105: // phone_ringing
+      effect = {EMOJI_SIDE_PEEK, ICON_ID_BELL, ICON_ID_COUNT, 0xBDF7};
+      return true;
+    case 110: // co2_high
+      effect = {EMOJI_PULSE_CENTER, ICON_ID_WARN, ICON_ID_COUNT, 0xFBE0};
+      return true;
+    case 111: // noise_alert
+      effect = {EMOJI_PULSE_CENTER, ICON_ID_BELL, ICON_ID_COUNT, 0xFBE0};
+      return true;
+    case 114: // power_outage
+      effect = {EMOJI_PULSE_CENTER, ICON_ID_BOLT, ICON_ID_COUNT, 0xF800};
+      return true;
+    case 56:  // mail_arrived
+      effect = {EMOJI_SIDE_PEEK, ICON_ID_BOX, ICON_ID_COUNT, 0xBDF7};
+      return true;
+
+    // Activity differentiation
+    case 155: // workout_time
+      effect = {EMOJI_EYE_SPARKLE, ICON_ID_STAR, ICON_ID_COUNT, 0x07E0}; // green sparkle
+      return true;
+    case 173: // gaming
+      effect = {EMOJI_EYE_SPARKLE, ICON_ID_STAR, ICON_ID_COUNT, 0x07E0};
+      return true;
+    case 159: // tea_time
+      effect = {EMOJI_BOTTOM_STATUS, ICON_ID_MUG, ICON_ID_COUNT, 0xBDF7};
+      return true;
+    case 183: // campfire
+      effect = {EMOJI_BOTTOM_STATUS, ICON_ID_STAR, ICON_ID_COUNT, 0xFBE0}; // warm glow below
+      return true;
+    case 174: // reading
+      effect = {EMOJI_BOTTOM_STATUS, ICON_ID_BOX, ICON_ID_COUNT, 0xC460}; // book-ish
+      return true;
+
     default:
       return false;
   }

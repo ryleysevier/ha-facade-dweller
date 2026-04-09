@@ -256,9 +256,86 @@ void EyeRenderer::setEmotion(float pleasure, float arousal, float dominance) {
   tweenT = 0.0f;
 }
 
+// Category-based hue overrides so similar-PAD moods look distinct
+void EyeRenderer::applyHueOverride(int moodIndex, EyeParams &params) {
+  if (moodIndex < 0) return;
+
+  // TIME-BASED (130-159): gradient from dawn pink → noon gold → dusk orange → night blue
+  if (moodIndex >= 130 && moodIndex <= 159) {
+    float t = (float)(moodIndex - 130) / 29.0f; // 0..1 across the day
+    if (t < 0.2f)       params.hue = 320 + t * 200; // dawn: pink-ish (320-360)
+    else if (t < 0.4f)  params.hue = 40 + (t - 0.2f) * 50;  // morning: gold (40-50)
+    else if (t < 0.6f)  params.hue = 45;  // midday: bright gold
+    else if (t < 0.8f)  params.hue = 20 + (t - 0.6f) * -75;  // evening: orange→red (20→5)
+    else                 params.hue = 220 + (t - 0.8f) * 200; // night: blue (220-260)
+    return;
+  }
+
+  // WEATHER moods: specific hue per weather type
+  switch (moodIndex) {
+    case 98:  params.hue = 210; break; // rain: steel blue
+    case 99:  params.hue = 265; break; // storm: dark purple
+    case 100: params.hue = 45;  params.saturation = 0.9f; break; // sunny: bright gold
+    case 101: params.hue = 200; params.saturation = 0.35f; break; // cloudy: desaturated blue-grey
+    case 102: params.hue = 195; params.saturation = 0.4f; break; // snowing: pale cyan
+    case 103: params.hue = 175; break; // windy: teal-green
+    case 184: params.hue = 270; break; // thunderstorm: vivid purple
+    case 185: params.hue = 195; params.saturation = 0.35f; break; // snowfall: pale
+    case 186: params.hue = 170; break; // wind howling: teal
+    case 187: params.hue = 10; break;  // heatwave: red-orange
+    default: break;
+  }
+
+  // HOLIDAY moods: unique hue per holiday
+  switch (moodIndex) {
+    case 160: params.hue = 0; params.saturation = 0.85f; break;   // christmas: red
+    case 161: params.hue = 30; break;  // halloween: orange
+    case 162: params.hue = 330; break; // valentines: pink
+    case 163: params.hue = 50; params.saturation = 0.95f; break;  // new years: bright gold
+    case 164: params.hue = 310; break; // birthday: magenta
+    case 165: params.hue = 45; break;  // fireworks: gold
+    case 166: params.hue = 140; break; // spring bloom: green
+    case 167: params.hue = 40; break;  // summer heat: warm gold
+    case 168: params.hue = 25; break;  // autumn: orange-amber
+    case 169: params.hue = 200; break; // winter cold: ice blue
+    default: break;
+  }
+
+  // HOME UTILITY moods: subtle tints to differentiate
+  switch (moodIndex) {
+    case 48: params.hue = 15; break;  // heating: warm orange-red
+    case 49: params.hue = 200; break; // cooling: cool blue
+    case 50: params.hue = 170; break; // vacuum: teal (busy)
+    case 43: params.hue = 195; break; // washer: blue-teal
+    case 58: params.hue = 150; break; // sprinklers: green
+    case 37: params.hue = 170; params.saturation = 0.5f; break; // humid: murky teal
+    case 38: params.hue = 40; params.saturation = 0.4f; break;  // dry air: faded amber
+    default: break;
+  }
+
+  // ACTIVITY moods
+  switch (moodIndex) {
+    case 172: params.hue = 270; params.saturation = 0.5f; break; // meditation: soft purple
+    case 173: params.hue = 120; break; // gaming: green
+    case 174: params.hue = 30; break;  // reading: warm amber
+    case 175: params.hue = 210; break; // working: blue (focus)
+    case 176: params.hue = 290; break; // creative: purple-magenta
+    case 177: params.hue = 170; params.saturation = 0.5f; break; // spa: soft teal
+    case 178: params.hue = 310; break; // dance party: hot pink
+    case 179: params.hue = 30; params.saturation = 0.7f; break;  // candlelight: warm
+    case 180: params.hue = 240; break; // stargazing: deep blue
+    case 181: params.hue = 195; break; // ocean: ocean blue
+    case 182: params.hue = 140; break; // forest: green
+    case 183: params.hue = 20; break;  // campfire: orange
+    default: break;
+  }
+}
+
 void EyeRenderer::setMood(const Mood &mood, int moodIndex) {
   setEmotion(padToFloat(mood.pleasure), padToFloat(mood.arousal), padToFloat(mood.dominance));
   currentMoodIndex = moodIndex;
+  // Apply hue overrides to target
+  applyHueOverride(moodIndex, target);
   pupilReplaced = false;
   EmojiEffect effect;
   if (moodIndex >= 0 && getMoodEmoji(moodIndex, effect)) {

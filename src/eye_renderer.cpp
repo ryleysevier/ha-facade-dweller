@@ -237,12 +237,13 @@ EyeRenderer::EyeRenderer(uint16_t *framebuffer, int16_t width, int16_t height)
     currentMoodIndex(-1),
     tweenT(1.0f), lastMs(0),
     blinkTimer(3.0f), blinkPhase(0), isBlinking(false),
+    blinkCount(0), doDoubleBlink(false), doubleBlikPause(0),
     saccadeX(0), saccadeY(0), saccadeTimer(0),
-    breathPhase(0),
     gazeTargetX(0), gazeTargetY(0),
     gazeCurrentX(0), gazeCurrentY(0), gazeTimer(0),
     lookAroundTimer(3.0f), lookAroundHoldTimer(0),
     isLookingAround(false), lookAroundBaseX(0), lookAroundBaseY(0),
+    expressionTimer(15.0f), pupilPulse(0), squintAmount(0), widenAmount(0),
     curP(0), curA(0), curD(0) {
   emojiFx = new EmojiFx(framebuffer, width, height);
   memset(&current, 0, sizeof(EyeParams));
@@ -455,34 +456,80 @@ void EyeRenderer::update() {
     render = current;
   }
 
-  // --- Autonomous blink ---
+  // === LAYER 2: Blinks (with double-blink and slow-blink) ===
   blinkTimer -= dt;
-  if (blinkTimer <= 0 && !isBlinking) {
+  if (doDoubleBlink) {
+    // Double-blink: short pause then blink again
+    doubleBlikPause -= dt;
+    if (doubleBlikPause <= 0) {
+      doDoubleBlink = false;
+      isBlinking = true;
+      blinkPhase = 0;
+    }
+  }
+  if (blinkTimer <= 0 && !isBlinking && !doDoubleBlink) {
     isBlinking = true;
     blinkPhase = 0;
+    blinkCount++;
+    // 15% chance of double-blink
+    if (random(0, 100) < 15) {
+      doDoubleBlink = true;
+      doubleBlikPause = 0.15f; // 150ms pause between blinks
+    }
   }
   if (isBlinking) {
-    blinkPhase += dt * 6.0f; // blink duration ~0.33s
+    // Slow blink (content/cat-like) ~10% of the time when pleasure is high
+    float blinkSpeed = 6.0f;
+    if (render.openness < 0.5f || (random(0, 100) < 10 && curP > 40)) {
+      blinkSpeed = 3.5f; // slow, content blink
+    }
+    blinkPhase += dt * blinkSpeed;
     if (blinkPhase >= 2.0f) {
       isBlinking = false;
       blinkPhase = 0;
-      blinkTimer = render.blinkRate + random(-100, 100) / 100.0f;
+      blinkTimer = render.blinkRate + random(-100, 150) / 100.0f;
     }
   }
-  // Blink factor with anticipation: slight squint before closing
+  // Blink factor with anticipation + asymmetric timing
   float bf = 0;
   if (isBlinking) {
     if (blinkPhase < 0.15f) {
-      // Anticipation: slight squint
-      bf = easeIn(blinkPhase / 0.15f) * 0.1f;
-    } else if (blinkPhase < 1.0f) {
-      // Close: fast ease-in
-      bf = 0.1f + easeIn((blinkPhase - 0.15f) / 0.85f) * 0.9f;
+      bf = easeIn(blinkPhase / 0.15f) * 0.1f; // anticipation squint
+    } else if (blinkPhase < 0.8f) {
+      bf = 0.1f + easeIn((blinkPhase - 0.15f) / 0.65f) * 0.9f; // fast close
     } else {
-      // Open: slower ease-out (follow-through)
-      bf = 1.0f - easeOut((blinkPhase - 1.0f));
+      bf = 1.0f - easeOut((blinkPhase - 0.8f) / 1.2f); // slower open (follow-through)
     }
   }
+
+  // === LAYER 5: Expression micro-variations ===
+  expressionTimer -= dt;
+  if (expressionTimer <= 0) {
+    expressionTimer = 12.0f + random(0, 18000) / 1000.0f; // 12-30s
+
+    int variation = random(0, 5);
+    switch (variation) {
+      case 0: // Pupil pulse — "noticed something"
+        pupilPulse = 0.15f;
+        break;
+      case 1: // Brief squint — "thinking"
+        squintAmount = 0.15f;
+        break;
+      case 2: // Eye widen — "alert for a moment"
+        widenAmount = 0.12f;
+        break;
+      case 3: // Nothing — variety includes doing nothing
+      case 4:
+        break;
+    }
+  }
+  // Decay expression variations smoothly
+  pupilPulse  *= (1.0f - dt * 2.0f); // fade over ~0.5s
+  squintAmount *= (1.0f - dt * 1.5f);
+  widenAmount  *= (1.0f - dt * 2.0f);
+  if (pupilPulse < 0.005f)   pupilPulse = 0;
+  if (squintAmount < 0.005f) squintAmount = 0;
+  if (widenAmount < 0.005f)  widenAmount = 0;
 
   // --- Saccades (micro eye movements) ---
   saccadeTimer -= dt;
@@ -548,15 +595,20 @@ void EyeRenderer::update() {
     gazeCurrentY += (gazeTargetY - gazeCurrentY) * 0.2f;
   }
 
-  // --- Breathing ---
+  // === LAYER 1: Breathing (always, continuous) ===
   breathPhase += dt * 1.5f;
   float breathScale = 1.0f + sinf(breathPhase) * 0.015f;
+  // Pupil breathing: subtle size oscillation synced with body
+  float pupilBreath = sinf(breathPhase * 0.8f) * 0.03f;
 
   // --- Compute geometry for TWO EYES ---
   float gap = 12.0f;
   float baseEyeW = render.width * 0.42f * breathScale;
   float baseEyeH = render.height * 0.55f * render.openness * breathScale;
-  baseEyeH *= (1.0f - bf);
+  // Apply expression variations
+  baseEyeH *= (1.0f - bf);                     // blink
+  baseEyeH *= (1.0f - squintAmount);            // thinking squint
+  baseEyeH *= (1.0f + widenAmount);             // alert widening
   baseEyeH = max(3.0f, baseEyeH);
 
   // Subtle asymmetry: right eye ~3% smaller (natural imperfection)
@@ -612,7 +664,7 @@ void EyeRenderer::update() {
 
     // Pupil (skip if emoji replaces it)
     if (eyeH > 8 && !pupilReplaced) {
-      float pupR = render.pupilSize * min(eyeW, eyeH) * 0.45f;
+      float pupR = (render.pupilSize + pupilPulse + pupilBreath) * min(eyeW, eyeH) * 0.45f;
       pupR = max(4.0f, pupR);
       float maxGazeX = (eyeW * 0.5f - pupR - 3);
       float maxGazeY = (eyeH * 0.5f - pupR - 3);

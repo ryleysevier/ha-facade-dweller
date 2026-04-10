@@ -77,24 +77,40 @@ private:
   EyeParams current;
   EyeParams target;
 
-  // Animation state
+  // === Layered idle animation timers ===
+
   float tweenT;           // 0..1 progress toward target
   unsigned long lastMs;
+
+  // Layer 1: Breathing (always, 2-4s cycle)
+  float breathPhase;
+
+  // Layer 2: Blinks (every 3-6s)
   float blinkTimer;
   float blinkPhase;       // 0=open, goes 0→1→0 during blink
   bool  isBlinking;
+  int   blinkCount;       // for double-blink detection
+  bool  doDoubleBlink;    // trigger a second quick blink
+  float doubleBlikPause;  // pause between double blinks
+
+  // Layer 3: Micro-saccades (every 100-300ms)
   float saccadeX, saccadeY;
   float saccadeTimer;
-  float breathPhase;
+
+  // Layer 4: Gaze shifts + look-around (5-12s)
   float gazeTargetX, gazeTargetY;
   float gazeCurrentX, gazeCurrentY;
   float gazeTimer;
+  float lookAroundTimer;
+  float lookAroundHoldTimer;
+  bool  isLookingAround;
+  float lookAroundBaseX, lookAroundBaseY;
 
-  // Look-around idle animation
-  float lookAroundTimer;    // countdown to next look
-  float lookAroundHoldTimer;// how long to hold the look
-  bool  isLookingAround;    // currently in a dramatic look
-  float lookAroundBaseX, lookAroundBaseY; // where the mood wants gaze
+  // Layer 5: Expression micro-variations (15-30s)
+  float expressionTimer;
+  float pupilPulse;       // temporary pupil size bump (noticing something)
+  float squintAmount;     // temporary squint
+  float widenAmount;      // temporary eye widening
 
   // PAD → EyeParams mapping
   void padToEyeParams(float p, float a, float d, EyeParams &out);

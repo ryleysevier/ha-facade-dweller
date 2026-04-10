@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_GC9A01A.h>
+#include <ArduinoOTA.h>
 #include "moods.h"
 #include "eye_renderer.h"
 #include "mqtt_handler.h"
@@ -97,10 +98,37 @@ void setup() {
   });
   mqtt.begin();
 
-  Serial.printf("Ready. Free heap: %d\n", ESP.getFreeHeap());
+  // OTA updates
+  ArduinoOTA.setHostname(DEVICE_NAME);
+  ArduinoOTA.onStart([]() {
+    // Show update indicator on screen
+    canvas->fillScreen(0x0000);
+    canvas->setTextSize(2);
+    canvas->setTextColor(0x07E0);
+    canvas->setCursor(60, 110);
+    canvas->print("Updating...");
+    tft.drawRGBBitmap(0, 0, framebuffer, 240, 240);
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    int pct = progress * 100 / total;
+    canvas->fillRect(40, 140, 160, 10, 0x0000);
+    canvas->fillRect(40, 140, pct * 160 / 100, 10, 0x07E0);
+    tft.drawRGBBitmap(0, 0, framebuffer, 240, 240);
+  });
+  ArduinoOTA.onEnd([]() {
+    canvas->fillScreen(0x0000);
+    canvas->setCursor(70, 110);
+    canvas->setTextColor(0x07E0);
+    canvas->print("Rebooting");
+    tft.drawRGBBitmap(0, 0, framebuffer, 240, 240);
+  });
+  ArduinoOTA.begin();
+
+  Serial.printf("Ready. OTA hostname: %s. Free heap: %d\n", DEVICE_NAME, ESP.getFreeHeap());
 }
 
 void loop() {
+  ArduinoOTA.handle();
   mqtt.loop();
   needs.update(millis());
 

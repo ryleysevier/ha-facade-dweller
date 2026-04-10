@@ -54,9 +54,9 @@
   <div class="card">
     <h2>Care</h2>
     <div class="btn-grid">
-      <button class="btn-care" onclick="send('tamagotchi/feed','')">🍕 Feed</button>
-      <button class="btn-care" onclick="send('tamagotchi/pet','')">🤗 Pet</button>
-      <button class="btn-care" onclick="send('tamagotchi/play','')">🎮 Play</button>
+      <button class="btn-care" onclick="send('facade/feed','')">🍕 Feed</button>
+      <button class="btn-care" onclick="send('facade/pet','')">🤗 Pet</button>
+      <button class="btn-care" onclick="send('facade/play','')">🎮 Play</button>
       <button class="btn-care" onclick="sendMood('love')" style="background:#e91e90">💕 Love</button>
     </div>
   </div>
@@ -123,7 +123,7 @@
     <h2>Raw MQTT</h2>
     <div class="config-row">
       <label>Topic</label>
-      <input type="text" id="rawTopic" value="tamagotchi/face">
+      <input type="text" id="rawTopic" value="facade/face">
     </div>
     <div class="config-row">
       <label>Payload</label>
@@ -214,7 +214,7 @@ function connectMqtt() {
     client = mqtt.connect(url, {
       username: user,
       password: pass,
-      clientId: 'tamagotchi-panel-' + Math.random().toString(16).substr(2, 4),
+      clientId: 'facade-panel-' + Math.random().toString(16).substr(2, 4),
     });
 
     client.on('connect', () => {
@@ -222,7 +222,7 @@ function connectMqtt() {
       statusEl.className = 'connected';
       statusEl.textContent = `Connected to ${host}:${port}`;
       document.getElementById('useCli').checked = false;
-      client.subscribe('tamagotchi/status');
+      client.subscribe('facade/status');
     });
 
     client.on('error', (err) => {
@@ -267,7 +267,7 @@ function send(topic, payload) {
 }
 
 function sendMood(name) {
-  send('tamagotchi/mood', JSON.stringify({name: name}));
+  send('facade/mood', JSON.stringify({name: name}));
   document.querySelectorAll('.btn-mood').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
 }
@@ -276,7 +276,7 @@ function sendPAD() {
   const p = parseInt(document.getElementById('padP').value);
   const a = parseInt(document.getElementById('padA').value);
   const d = parseInt(document.getElementById('padD').value);
-  send('tamagotchi/pad', JSON.stringify({p, a, d}));
+  send('facade/pad', JSON.stringify({p, a, d}));
 }
 
 function sendRaw() {

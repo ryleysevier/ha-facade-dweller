@@ -57,7 +57,7 @@ void MqttHandler::connectMqtt() {
     mqttClient.subscribe(TOPIC_FEED);
     mqttClient.subscribe(TOPIC_PET);
     mqttClient.subscribe(TOPIC_PLAY);
-    Serial.println("MQTT: subscribed to tamagotchi/*");
+    Serial.println("MQTT: subscribed to facade/*");
   } else {
     Serial.printf(" FAILED (rc=%d)\n", mqttClient.state());
   }
@@ -136,7 +136,7 @@ void MqttHandler::onMessage(char *topic, byte *payload, unsigned int length) {
     return;
   }
 
-  // --- TOPIC: tamagotchi/mood ---
+  // --- TOPIC: facade/mood ---
   if (strcmp(topic, TOPIC_MOOD) == 0) {
     const char *name = doc["name"] | "";
     int idx = findMoodByName(name);
@@ -153,7 +153,7 @@ void MqttHandler::onMessage(char *topic, byte *payload, unsigned int length) {
     }
   }
 
-  // --- TOPIC: tamagotchi/pad ---
+  // --- TOPIC: facade/pad ---
   else if (strcmp(topic, TOPIC_PAD) == 0) {
     cmd.hasPAD = true;
     cmd.p = doc["p"] | (int8_t)0;
@@ -161,7 +161,7 @@ void MqttHandler::onMessage(char *topic, byte *payload, unsigned int length) {
     cmd.d = doc["d"] | (int8_t)0;
   }
 
-  // --- TOPIC: tamagotchi/face ---
+  // --- TOPIC: facade/face ---
   else if (strcmp(topic, TOPIC_FACE) == 0) {
     // PAD (required)
     cmd.hasPAD = true;

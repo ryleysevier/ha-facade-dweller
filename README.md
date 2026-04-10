@@ -56,16 +56,16 @@ export $(cat .env | xargs) && pio run -t upload
 
 ```bash
 # Set a mood
-mosquitto_pub -h YOUR_MQTT_HOST -u YOUR_USER -P 'YOUR_PASS' -t tamagotchi/mood -m '{"name":"love"}'
+mosquitto_pub -h YOUR_MQTT_HOST -u YOUR_USER -P 'YOUR_PASS' -t facade/mood -m '{"name":"love"}'
 
 # Send raw PAD values
-mosquitto_pub -h YOUR_MQTT_HOST -u YOUR_USER -P 'YOUR_PASS' -t tamagotchi/pad -m '{"p":80,"a":50,"d":50}'
+mosquitto_pub -h YOUR_MQTT_HOST -u YOUR_USER -P 'YOUR_PASS' -t facade/pad -m '{"p":80,"a":50,"d":50}'
 
 # Full parametric control
-mosquitto_pub -h YOUR_MQTT_HOST -u YOUR_USER -P 'YOUR_PASS' -t tamagotchi/face -m '{"p":80,"a":50,"d":50,"hue":330,"icon":"heart","fx":"pupil_replace","color":"F800"}'
+mosquitto_pub -h YOUR_MQTT_HOST -u YOUR_USER -P 'YOUR_PASS' -t facade/face -m '{"p":80,"a":50,"d":50,"hue":330,"icon":"heart","fx":"pupil_replace","color":"F800"}'
 
 # Feed the pet
-mosquitto_pub -h YOUR_MQTT_HOST -u YOUR_USER -P 'YOUR_PASS' -t tamagotchi/feed -m ''
+mosquitto_pub -h YOUR_MQTT_HOST -u YOUR_USER -P 'YOUR_PASS' -t facade/feed -m ''
 ```
 
 ## MQTT Topics
@@ -74,18 +74,18 @@ mosquitto_pub -h YOUR_MQTT_HOST -u YOUR_USER -P 'YOUR_PASS' -t tamagotchi/feed -
 
 | Topic | Payload | Description |
 |-------|---------|-------------|
-| `tamagotchi/mood` | `{"name":"happy"}` | Set from 200 presets |
-| `tamagotchi/pad` | `{"p":80,"a":50,"d":50}` | Raw PAD values |
-| `tamagotchi/face` | `{"p":80,"a":50,"d":50,"hue":330,"icon":"heart","fx":"pupil_replace"}` | Full parametric |
-| `tamagotchi/feed` | any | Feed the pet |
-| `tamagotchi/pet` | any | Pet it |
-| `tamagotchi/play` | any | Entertain it |
+| `facade/mood` | `{"name":"happy"}` | Set from 200 presets |
+| `facade/pad` | `{"p":80,"a":50,"d":50}` | Raw PAD values |
+| `facade/face` | `{"p":80,"a":50,"d":50,"hue":330,"icon":"heart","fx":"pupil_replace"}` | Full parametric |
+| `facade/feed` | any | Feed the pet |
+| `facade/pet` | any | Pet it |
+| `facade/play` | any | Entertain it |
 
 ### Status (publish)
 
 | Topic | Payload | Interval |
 |-------|---------|----------|
-| `tamagotchi/status` | `{"mood":"happy","p":80,"a":50,"d":50,"uptime":3600}` | 30s |
+| `facade/status` | `{"mood":"happy","p":80,"a":50,"d":50,"uptime":3600}` | 30s |
 
 ## Tools
 

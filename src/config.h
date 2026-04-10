@@ -30,15 +30,15 @@
 #endif
 
 // MQTT topics
-#define TOPIC_MOOD    "tamagotchi/mood"
-#define TOPIC_PAD     "tamagotchi/pad"
-#define TOPIC_FACE    "tamagotchi/face"
-#define TOPIC_FEED    "tamagotchi/feed"
-#define TOPIC_PET     "tamagotchi/pet"
-#define TOPIC_PLAY    "tamagotchi/play"
-#define TOPIC_STATUS  "tamagotchi/status"
+#define TOPIC_MOOD    "facade/mood"
+#define TOPIC_PAD     "facade/pad"
+#define TOPIC_FACE    "facade/face"
+#define TOPIC_FEED    "facade/feed"
+#define TOPIC_PET     "facade/pet"
+#define TOPIC_PLAY    "facade/play"
+#define TOPIC_STATUS  "facade/status"
 
-#define DEVICE_NAME   "tamagotchi-01"
+#define DEVICE_NAME   "dweller-01"
 #define STATUS_INTERVAL_MS 30000
 
 #endif // CONFIG_H

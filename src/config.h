@@ -36,6 +36,7 @@
 #define TOPIC_FEED    "facade/feed"
 #define TOPIC_PET     "facade/pet"
 #define TOPIC_PLAY    "facade/play"
+#define TOPIC_POWER   "facade/power"    // "on" or "off"
 #define TOPIC_STATUS  "facade/status"
 
 #define DEVICE_NAME   "dweller-01"

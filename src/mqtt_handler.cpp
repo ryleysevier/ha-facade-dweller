@@ -57,6 +57,7 @@ void MqttHandler::connectMqtt() {
     mqttClient.subscribe(TOPIC_FEED);
     mqttClient.subscribe(TOPIC_PET);
     mqttClient.subscribe(TOPIC_PLAY);
+    mqttClient.subscribe(TOPIC_POWER);
     Serial.println("MQTT: subscribed to facade/*");
   } else {
     Serial.printf(" FAILED (rc=%d)\n", mqttClient.state());
@@ -115,9 +116,10 @@ void MqttHandler::onMessage(char *topic, byte *payload, unsigned int length) {
 
   // Handle needs topics (no JSON parsing needed)
   if (needsCallback) {
-    if (strcmp(topic, TOPIC_FEED) == 0) { needsCallback("feed"); return; }
-    if (strcmp(topic, TOPIC_PET) == 0)  { needsCallback("pet"); return; }
-    if (strcmp(topic, TOPIC_PLAY) == 0) { needsCallback("play"); return; }
+    if (strcmp(topic, TOPIC_FEED) == 0)  { needsCallback("feed"); return; }
+    if (strcmp(topic, TOPIC_PET) == 0)   { needsCallback("pet"); return; }
+    if (strcmp(topic, TOPIC_PLAY) == 0)  { needsCallback("play"); return; }
+    if (strcmp(topic, TOPIC_POWER) == 0) { needsCallback(json); return; }
   }
 
   if (!faceCallback) return;

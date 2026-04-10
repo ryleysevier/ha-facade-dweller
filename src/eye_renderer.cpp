@@ -603,8 +603,8 @@ void EyeRenderer::update() {
 
   // --- Compute geometry for TWO EYES ---
   float gap = 12.0f;
-  float baseEyeW = render.width * 0.42f * breathScale;
-  float baseEyeH = render.height * 0.55f * render.openness * breathScale;
+  float baseEyeW = render.width * 0.48f * breathScale;
+  float baseEyeH = render.height * 0.65f * render.openness * breathScale;
   // Apply expression variations
   baseEyeH *= (1.0f - bf);                     // blink
   baseEyeH *= (1.0f - squintAmount);            // thinking squint
@@ -638,15 +638,8 @@ void EyeRenderer::update() {
   // --- RENDER ---
   fbFillScreen(bgCol);
 
-  // Glow behind both eyes
-  if (render.glowIntensity > 0.05f) {
-    int16_t gr = (int16_t)(render.glowIntensity * 50 + eyeW * 0.5f);
-    for (int16_t r = gr; r > 0; r -= 3) {
-      float t = (float)r / (float)gr;
-      uint16_t gc = lerpColor565(bgCol, glowCol, t * t);
-      fbFillCircle(cx, cy, r, gc);
-    }
-  }
+  // Glow behind eyes (disabled — too faint on hardware)
+  // if (render.glowIntensity > 0.05f) { ... }
 
   // Draw each eye
   for (int side = 0; side < 2; side++) {

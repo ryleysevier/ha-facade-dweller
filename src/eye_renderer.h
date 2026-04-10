@@ -90,6 +90,12 @@ private:
   float gazeCurrentX, gazeCurrentY;
   float gazeTimer;
 
+  // Look-around idle animation
+  float lookAroundTimer;    // countdown to next look
+  float lookAroundHoldTimer;// how long to hold the look
+  bool  isLookingAround;    // currently in a dramatic look
+  float lookAroundBaseX, lookAroundBaseY; // where the mood wants gaze
+
   // PAD → EyeParams mapping
   void padToEyeParams(float p, float a, float d, EyeParams &out);
 

@@ -241,6 +241,8 @@ EyeRenderer::EyeRenderer(uint16_t *framebuffer, int16_t width, int16_t height)
     breathPhase(0),
     gazeTargetX(0), gazeTargetY(0),
     gazeCurrentX(0), gazeCurrentY(0), gazeTimer(0),
+    lookAroundTimer(3.0f), lookAroundHoldTimer(0),
+    isLookingAround(false), lookAroundBaseX(0), lookAroundBaseY(0),
     curP(0), curA(0), curD(0) {
   emojiFx = new EmojiFx(framebuffer, width, height);
   memset(&current, 0, sizeof(EyeParams));
@@ -490,27 +492,60 @@ void EyeRenderer::update() {
     saccadeTimer = 0.08f + random(0, 200) / 1000.0f;
   }
 
-  // --- Idle gaze drift ---
-  gazeTimer -= dt;
-  if (gazeTimer <= 0) {
-    gazeTargetX = render.gazeX + (random(-100, 100) / 100.0f) * render.saccadeAmount * 0.3f;
-    gazeTargetY = render.gazeY + (random(-100, 100) / 100.0f) * render.saccadeAmount * 0.2f;
-    gazeTimer = 1.0f + random(0, 2000) / 1000.0f;
+  // --- Look-around idle animation ---
+  // Periodically pick a dramatic gaze direction, hold it, then return
+  lookAroundBaseX = render.gazeX;
+  lookAroundBaseY = render.gazeY;
+
+  if (isLookingAround) {
+    lookAroundHoldTimer -= dt;
+    if (lookAroundHoldTimer <= 0) {
+      // Done looking — return to base gaze
+      isLookingAround = false;
+      gazeTargetX = lookAroundBaseX;
+      gazeTargetY = lookAroundBaseY;
+      lookAroundTimer = 3.0f + random(0, 5000) / 1000.0f; // 3-8s until next look
+    }
+  } else {
+    lookAroundTimer -= dt;
+    if (lookAroundTimer <= 0) {
+      isLookingAround = true;
+      // Pick a dramatic direction
+      int dir = random(0, 6);
+      switch (dir) {
+        case 0: gazeTargetX = -0.7f; gazeTargetY =  0.0f; break; // look left
+        case 1: gazeTargetX =  0.7f; gazeTargetY =  0.0f; break; // look right
+        case 2: gazeTargetX =  0.0f; gazeTargetY = -0.5f; break; // look up
+        case 3: gazeTargetX =  0.0f; gazeTargetY =  0.4f; break; // look down
+        case 4: gazeTargetX = -0.5f; gazeTargetY = -0.3f; break; // upper left
+        case 5: gazeTargetX =  0.5f; gazeTargetY = -0.3f; break; // upper right
+      }
+      lookAroundHoldTimer = 0.8f + random(0, 1200) / 1000.0f; // hold 0.8-2s
+    } else {
+      // Small idle drift between look-arounds
+      gazeTimer -= dt;
+      if (gazeTimer <= 0) {
+        gazeTargetX = lookAroundBaseX + (random(-100, 100) / 100.0f) * 0.15f;
+        gazeTargetY = lookAroundBaseY + (random(-100, 100) / 100.0f) * 0.1f;
+        gazeTimer = 1.5f + random(0, 2000) / 1000.0f;
+      }
+    }
   }
-  // Smooth gaze with overshoot (saccade dart: fast move → overshoot → settle)
+
+  // Smooth gaze with overshoot (saccade dart)
   float gazeSpeed = render.moveSpeed * dt;
   float dx = gazeTargetX - gazeCurrentX;
   float dy = gazeTargetY - gazeCurrentY;
   float dist = sqrtf(dx * dx + dy * dy);
-  if (dist > 0.01f) {
-    // Fast initial dart with 15% overshoot
-    float overshoot = 1.15f;
+  if (dist > 0.05f) {
+    // Fast dart with overshoot for dramatic looks
+    float overshoot = isLookingAround ? 1.2f : 1.1f;
     gazeCurrentX += dx * gazeSpeed * overshoot;
     gazeCurrentY += dy * gazeSpeed * overshoot;
   } else {
-    // Settle back to target (spring damping)
-    gazeCurrentX += (gazeTargetX - gazeCurrentX) * 0.3f;
-    gazeCurrentY += (gazeTargetY - gazeCurrentY) * 0.3f;
+    // Settle (spring damping)
+    gazeCurrentX += (gazeTargetX - gazeCurrentX) * 0.2f;
+    gazeCurrentY += (gazeTargetY - gazeCurrentY) * 0.2f;
   }
 
   // --- Breathing ---

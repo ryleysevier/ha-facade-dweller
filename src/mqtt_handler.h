@@ -25,6 +25,7 @@ struct FaceCommand {
 
 typedef void (*FaceCallback)(const FaceCommand &cmd);
 typedef void (*NeedsCallback)(const char *action); // "feed", "pet", "play"
+typedef void (*NowPlayingCallback)(const char *title, const char *artist, uint32_t durationMs);
 
 class MqttHandler {
 public:
@@ -34,6 +35,7 @@ public:
   void loop();
   void setFaceCallback(FaceCallback cb) { faceCallback = cb; }
   void setNeedsCallback(NeedsCallback cb) { needsCallback = cb; }
+  void setNowPlayingCallback(NowPlayingCallback cb) { nowPlayingCallback = cb; }
 
   // Publish current status
   void publishStatus(int8_t p, int8_t a, int8_t d, const char *moodName, unsigned long uptimeMs);
@@ -46,6 +48,7 @@ private:
   PubSubClient mqttClient;
   FaceCallback faceCallback;
   NeedsCallback needsCallback;
+  NowPlayingCallback nowPlayingCallback = nullptr;
   unsigned long lastStatusMs;
   unsigned long lastReconnectMs;
 

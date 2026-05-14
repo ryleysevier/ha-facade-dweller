@@ -58,6 +58,7 @@ void MqttHandler::connectMqtt() {
     mqttClient.subscribe(TOPIC_PET);
     mqttClient.subscribe(TOPIC_PLAY);
     mqttClient.subscribe(TOPIC_POWER);
+    mqttClient.subscribe(TOPIC_NOW_PLAYING);
     Serial.println("MQTT: subscribed to facade/*");
   } else {
     Serial.printf(" FAILED (rc=%d)\n", mqttClient.state());
@@ -122,6 +123,24 @@ void MqttHandler::onMessage(char *topic, byte *payload, unsigned int length) {
     if (strcmp(topic, TOPIC_POWER) == 0) { needsCallback(json); return; }
   }
 
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, json);
+  if (err) {
+    Serial.printf("MQTT: JSON parse error: %s\n", err.c_str());
+    return;
+  }
+
+  // --- TOPIC: facade/now_playing ---
+  if (strcmp(topic, TOPIC_NOW_PLAYING) == 0) {
+    if (nowPlayingCallback) {
+      const char *title = doc["title"] | "";
+      const char *artist = doc["artist"] | "";
+      uint32_t duration = doc["duration_ms"] | 10000U;
+      nowPlayingCallback(title, artist, duration);
+    }
+    return;
+  }
+
   if (!faceCallback) return;
 
   FaceCommand cmd = {};
@@ -130,13 +149,6 @@ void MqttHandler::onMessage(char *topic, byte *payload, unsigned int length) {
   cmd.icon = ICON_ID_COUNT;
   cmd.pattern = EMOJI_NONE;
   cmd.emojiColor = 0xFFFF;
-
-  JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, json);
-  if (err) {
-    Serial.printf("MQTT: JSON parse error: %s\n", err.c_str());
-    return;
-  }
 
   // --- TOPIC: facade/mood ---
   if (strcmp(topic, TOPIC_MOOD) == 0) {

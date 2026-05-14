@@ -38,6 +38,7 @@
 #define TOPIC_PLAY    "facade/play"
 #define TOPIC_POWER   "facade/power"    // "on" or "off"
 #define TOPIC_STATUS  "facade/status"
+#define TOPIC_NOW_PLAYING "facade/now_playing"
 
 #define DEVICE_NAME   "dweller-01"
 #define STATUS_INTERVAL_MS 30000

@@ -30,6 +30,109 @@ int lastNeedsMoodIdx = -1;
 bool screenOn = true;
 bool powerAnimating = false;
 
+// Now Playing overlay state
+#define OVL_FADE_MS 500
+unsigned long overlayStartMs = 0;
+uint32_t overlayHoldMs = 0; // 0 = inactive
+char overlayTitle[96] = "";
+char overlayArtist[96] = "";
+
+uint8_t overlayFaceAlpha(unsigned long now) {
+  if (overlayHoldMs == 0) return 255;
+  unsigned long elapsed = now - overlayStartMs;
+  uint32_t fadeOutEnd = OVL_FADE_MS;
+  uint32_t holdEnd    = fadeOutEnd + overlayHoldMs;
+  uint32_t fadeInEnd  = holdEnd + OVL_FADE_MS;
+  if (elapsed >= fadeInEnd) { overlayHoldMs = 0; return 255; }
+  if (elapsed < fadeOutEnd) return 255 - (elapsed * 255 / OVL_FADE_MS);
+  if (elapsed < holdEnd)    return 0;
+  return (elapsed - holdEnd) * 255 / OVL_FADE_MS;
+}
+
+void startNowPlayingOverlay(const char *title, const char *artist, uint32_t holdMs) {
+  if (!screenOn) return; // music shouldn't wake the dweller
+  if (!title || !*title) return;
+  strncpy(overlayTitle,  title  ? title  : "", sizeof(overlayTitle)  - 1);
+  strncpy(overlayArtist, artist ? artist : "", sizeof(overlayArtist) - 1);
+  overlayTitle[sizeof(overlayTitle) - 1] = 0;
+  overlayArtist[sizeof(overlayArtist) - 1] = 0;
+
+  // If face is already hidden (we're in hold or fading in), jump to hold start
+  // with the new track instead of double-fading.
+  unsigned long now = millis();
+  bool faceHidden = (overlayHoldMs > 0) && (now - overlayStartMs) >= OVL_FADE_MS;
+  overlayHoldMs = holdMs > 0 ? holdMs : 10000;
+  overlayStartMs = faceHidden ? (now - OVL_FADE_MS) : now;
+  Serial.printf("NowPlaying: %s — %s (%lums)\n", overlayTitle, overlayArtist, overlayHoldMs);
+}
+
+// Dim every pixel in the framebuffer by `factor` (0=black, 255=unchanged).
+void dimFramebuffer(uint8_t factor) {
+  if (factor == 255) return;
+  uint16_t *p = framebuffer;
+  const int N = 240 * 240;
+  if (factor == 0) {
+    memset(p, 0, N * sizeof(uint16_t));
+    return;
+  }
+  for (int i = 0; i < N; i++) {
+    uint16_t c = p[i];
+    if (c == 0) continue;
+    uint8_t r = (c >> 11) & 0x1F;
+    uint8_t g = (c >> 5)  & 0x3F;
+    uint8_t b =  c        & 0x1F;
+    r = (r * factor) >> 8;
+    g = (g * factor) >> 8;
+    b = (b * factor) >> 8;
+    p[i] = (r << 11) | (g << 5) | b;
+  }
+}
+
+// Draw a single line of text centered at y, with given color, truncating with
+// "..." if it exceeds maxWidth.
+static void drawCenteredLine(const char *text, int16_t y, uint16_t color, int16_t maxWidth) {
+  if (!text || !*text) return;
+  char buf[96];
+  strncpy(buf, text, sizeof(buf) - 1);
+  buf[sizeof(buf) - 1] = 0;
+
+  int16_t x1, y1; uint16_t tw, th;
+  canvas->getTextBounds(buf, 0, 0, &x1, &y1, &tw, &th);
+  if (tw > maxWidth) {
+    while (tw > maxWidth && strlen(buf) > 4) {
+      buf[strlen(buf) - 1] = 0;
+      canvas->getTextBounds(buf, 0, 0, &x1, &y1, &tw, &th);
+    }
+    size_t L = strlen(buf);
+    if (L >= 3) { buf[L-3] = '.'; buf[L-2] = '.'; buf[L-1] = '.'; }
+    canvas->getTextBounds(buf, 0, 0, &x1, &y1, &tw, &th);
+  }
+  int16_t tx = (240 - (int16_t)tw) / 2 - x1;
+  canvas->setCursor(tx, y);
+  canvas->setTextColor(color);
+  canvas->print(buf);
+}
+
+void renderNowPlayingText(uint8_t alpha) {
+  if (alpha == 0) return;
+  // Title: FreeSans 9pt white, ~50px wide safe margin from edges of round screen
+  uint16_t titleColor  = RGB565(alpha, alpha, alpha);
+  // Artist: dimmer (~60% of title), slight cool tint
+  uint8_t aa = (alpha * 153) >> 8;
+  uint16_t artistColor = RGB565(aa, aa, (uint8_t)min(255, aa + 30));
+
+  canvas->setFont(&FreeSans9pt7b);
+  canvas->setTextSize(1);
+  canvas->setTextWrap(false);
+  drawCenteredLine(overlayTitle, 115, titleColor, 200);
+  if (overlayArtist[0]) {
+    canvas->setFont(NULL); // default 5x8 for artist
+    canvas->setTextSize(1);
+    drawCenteredLine(overlayArtist, 140, artistColor, 220);
+  }
+  canvas->setFont(NULL);
+}
+
 void crtOff() {
   if (!screenOn || powerAnimating) return;
   powerAnimating = true;
@@ -219,6 +322,9 @@ void setup() {
 
   // Connect WiFi + MQTT
   mqtt.setFaceCallback(onFaceCommand);
+  mqtt.setNowPlayingCallback([](const char *title, const char *artist, uint32_t durationMs) {
+    startNowPlayingOverlay(title, artist, durationMs);
+  });
   mqtt.setNeedsCallback([](const char *action) {
     if (strcmp(action, "feed") == 0) needs.feed();
     else if (strcmp(action, "pet") == 0) needs.pet();
@@ -309,6 +415,14 @@ void loop() {
   // Connection indicator (tiny dot top-right)
   uint16_t dotColor = mqtt.isConnected() ? 0x07E0 : (mqtt.isWifiConnected() ? 0xFFE0 : 0xF800);
   canvas->fillCircle(220, 20, 3, dotColor);
+
+  // Now Playing overlay: dim the whole framebuffer (face + mood text + dot)
+  // by the face alpha, then composite the track text on top.
+  uint8_t faceAlpha = overlayFaceAlpha(millis());
+  if (faceAlpha < 255) {
+    dimFramebuffer(faceAlpha);
+    renderNowPlayingText(255 - faceAlpha);
+  }
 
   tft.drawRGBBitmap(0, 0, framebuffer, 240, 240);
 
